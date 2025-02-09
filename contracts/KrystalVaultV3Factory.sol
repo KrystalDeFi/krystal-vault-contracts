@@ -76,7 +76,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
     vaults[token1][token0][fee] = krystalVaultV3;
     allVaults.push(krystalVaultV3);
 
-    emit VaultCreated(token0, token1, fee, krystalVaultV3, allVaults.length);
+    emit VaultCreated(_msgSender(), token0, token1, fee, krystalVaultV3, allVaults.length);
 
     return krystalVaultV3;
   }
