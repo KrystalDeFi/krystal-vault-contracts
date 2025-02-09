@@ -15,7 +15,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
 
   address public depositor;
 
-  mapping(address => mapping(address => mapping(uint24 => address))) public vaults;
+  mapping(address => Vault[]) public vaultsByAddress;
 
   address[] public allVaults;
 
@@ -51,7 +51,6 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
 
     require(token0 != address(0), "SF: ZERO_ADDRESS");
     require(token1 != address(0), "SF: ZERO_ADDRESS");
-    require(vaults[token0][token1][fee] == address(0), "SF: KRYSTALVAULTV3_EXISTS");
 
     int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(fee);
 
@@ -72,8 +71,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
       )
     );
 
-    vaults[token0][token1][fee] = krystalVaultV3;
-    vaults[token1][token0][fee] = krystalVaultV3;
+    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), depositor, krystalVaultV3, token0, token1, fee));
     allVaults.push(krystalVaultV3);
 
     emit VaultCreated(_msgSender(), token0, token1, fee, krystalVaultV3, allVaults.length);

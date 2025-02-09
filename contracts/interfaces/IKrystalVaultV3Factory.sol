@@ -4,6 +4,15 @@ pragma solidity =0.7.6;
 pragma abicoder v2;
 
 interface IKrystalVaultV3Factory {
+  struct Vault {
+    address owner;
+    address depositor;
+    address krystalVaultV3;
+    address token0;
+    address token1;
+    uint24 fee;
+  }
+
   event VaultCreated(
     address indexed owner,
     address token0,
