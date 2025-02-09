@@ -98,9 +98,5 @@ interface IKrystalVaultV3 {
 
   function baseUpper() external view returns (int24);
 
-  function deposit0Max() external view returns (uint256);
-
-  function deposit1Max() external view returns (uint256);
-
   function pool() external view returns (IUniswapV3Pool);
 }

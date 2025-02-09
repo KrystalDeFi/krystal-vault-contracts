@@ -206,9 +206,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
           ? vaultConfigs[pos].deposit1Max
           : vaultConfigs[pos].deposit0Max;
       } else {
-        amountEnd = (token == address(IKrystalVaultV3(pos).token0()))
-          ? IKrystalVaultV3(pos).deposit1Max()
-          : IKrystalVaultV3(pos).deposit0Max();
+        amountEnd = type(uint256).max;
       }
     } else if (total0 == 0 || total1 == 0) {
       amountStart = 0;

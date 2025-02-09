@@ -42,8 +42,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   int24 public limitLower;
   int24 public limitUpper;
 
-  uint256 public override deposit0Max;
-  uint256 public override deposit1Max;
   uint256 public maxTotalSupply;
 
   address public whitelistedAddress;
@@ -69,8 +67,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
     tickSpacing = pool.tickSpacing();
     maxTotalSupply = 0;
-    deposit0Max = uint256(-1);
-    deposit1Max = uint256(-1);
 
     transferOwnership(_owner);
   }
@@ -90,7 +86,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint256[4] memory inMin
   ) external override nonReentrant returns (uint256 shares) {
     require(deposit0 > 0 || deposit1 > 0, "deposit amount should not be zero");
-    require(deposit0 <= deposit0Max && deposit1 <= deposit1Max, "deposit amount exceeds max limit");
     require(to != address(0) && to != address(this), "to");
     require(msg.sender == whitelistedAddress, "Unauthorized");
 
