@@ -27,6 +27,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   using SafeMath for uint256;
   using SignedSafeMath for int256;
 
+  address public depositor;
+
   IUniswapV3Pool public override pool;
   IERC20 public override token0;
   IERC20 public override token1;
@@ -44,7 +46,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
   uint256 public maxTotalSupply;
 
-  address public whitelistedAddress;
   address public feeRecipient;
 
   /// @param _pool Uniswap V3 pool for which liquidity is managed
@@ -52,12 +53,15 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   constructor(
     address _pool,
     address _owner,
+    address _depositor,
     string memory name,
     string memory symbol
   ) ERC20Permit(name) ERC20(name, symbol) {
     require(_pool != address(0), "pool should be non-zero");
     require(_owner != address(0), "owner should be non-zero");
+    require(_depositor != address(0), "depositor should be non-zero");
 
+    depositor = _depositor;
     pool = IUniswapV3Pool(_pool);
     token0 = IERC20(pool.token0());
     token1 = IERC20(pool.token1());
@@ -69,6 +73,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     maxTotalSupply = 0;
 
     transferOwnership(_owner);
+  }
+
+  modifier onlyDepositor() {
+    require(_msgSender() == depositor, "Unauthorized");
+    _;
   }
 
   /// @notice Deposit tokens
@@ -84,10 +93,9 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     address to,
     address from,
     uint256[4] memory inMin
-  ) external override nonReentrant returns (uint256 shares) {
+  ) external override nonReentrant onlyDepositor returns (uint256 shares) {
     require(deposit0 > 0 || deposit1 > 0, "deposit amount should not be zero");
     require(to != address(0) && to != address(this), "to");
-    require(msg.sender == whitelistedAddress, "Unauthorized");
 
     /// update fees
     zeroBurn();
@@ -248,7 +256,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     amount0 = base0.add(limit0).add(unusedAmount0);
     amount1 = base1.add(limit1).add(unusedAmount1);
 
-    require(from == msg.sender, "own");
+    require(from == _msgSender(), "own");
 
     _burn(from, shares);
 
@@ -454,13 +462,13 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
   /// @notice Callback function of uniswapV3Pool mint
   function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
-    require(msg.sender == address(pool), "sender should be pool");
+    require(_msgSender() == address(pool), "sender should be pool");
     require(mintCalled == true, "mintCalled is false");
 
     mintCalled = false;
 
-    if (amount0 > 0) token0.safeTransfer(msg.sender, amount0);
-    if (amount1 > 0) token1.safeTransfer(msg.sender, amount1);
+    if (amount0 > 0) token0.safeTransfer(_msgSender(), amount0);
+    if (amount1 > 0) token1.safeTransfer(_msgSender(), amount1);
   }
 
   /// @return total0 Quantity of token0 in both positions and unused in the KrystalVaultV3
@@ -558,13 +566,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     assert(x <= type(uint128).max);
 
     return uint128(x);
-  }
-
-  /// @param _address address to whitelist
-  function setWhitelist(address _address) external override onlyOwner {
-    whitelistedAddress = _address;
-
-    emit SetWhitelist(_address);
   }
 
   /// @notice set fee

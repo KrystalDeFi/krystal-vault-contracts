@@ -41,18 +41,18 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   uint256 public constant PRECISION = 1e36;
 
   constructor() {
-    _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    _setupRole(ADMIN_ROLE, msg.sender);
-    _setupRole(OPERATOR_ROLE, msg.sender);
+    _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    _setupRole(ADMIN_ROLE, _msgSender());
+    _setupRole(OPERATOR_ROLE, _msgSender());
   }
 
   modifier onlyAdmin() {
-    require(hasRole(ADMIN_ROLE, msg.sender), "Unauthorized");
+    require(hasRole(ADMIN_ROLE, _msgSender()), "Unauthorized");
     _;
   }
 
   modifier onlyOperator() {
-    require(hasRole(OPERATOR_ROLE, msg.sender), "Unauthorized");
+    require(hasRole(OPERATOR_ROLE, _msgSender()), "Unauthorized");
     _;
   }
 
@@ -157,7 +157,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     override
     nonReentrant
     onlyExistedConfig(pos)
-    onlyValidDeposit(deposit0, deposit1, msg.sender, to, pos)
+    onlyValidDeposit(deposit0, deposit1, _msgSender(), to, pos)
     onlySupplyAvailable(pos)
     returns (uint256 shares)
   {
@@ -173,9 +173,9 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     address pos,
     uint256[4] memory minIn
   ) internal returns (uint256 shares) {
-    shares = IKrystalVaultV3(pos).deposit(deposit0, deposit1, to, msg.sender, minIn);
+    shares = IKrystalVaultV3(pos).deposit(deposit0, deposit1, to, _msgSender(), minIn);
 
-    emit Deposit(msg.sender, to, shares, deposit0, deposit1);
+    emit Deposit(_msgSender(), to, shares, deposit0, deposit1);
 
     return shares;
   }

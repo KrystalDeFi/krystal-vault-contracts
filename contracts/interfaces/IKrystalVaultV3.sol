@@ -84,8 +84,6 @@ interface IKrystalVaultV3 {
 
   function currentTick() external view returns (int24 tick);
 
-  function setWhitelist(address _address) external;
-
   function setFee(uint8 newFee) external;
 
   function toggleDirectDeposit() external;

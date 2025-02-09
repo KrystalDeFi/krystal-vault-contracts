@@ -6,6 +6,8 @@ pragma abicoder v2;
 interface IKrystalVaultV3Factory {
   event VaultCreated(address token0, address token1, uint24 fee, address krystalVaultV3, uint256);
 
+  event DepositorSet(address depositor);
+
   function allVaultsLength() external view returns (uint256);
 
   function createVault(
@@ -15,4 +17,6 @@ interface IKrystalVaultV3Factory {
     string memory name,
     string memory symbol
   ) external returns (address krystalVaultV3);
+
+  function setDepositor(address _depositor) external;
 }

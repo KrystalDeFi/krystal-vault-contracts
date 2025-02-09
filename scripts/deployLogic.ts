@@ -86,6 +86,7 @@ export const deployKrystalVaultV3FactoryContract = async (
       existingContract?.["krystalVaultV3Factory"],
       "contracts/KrystalVaultV3Factory.sol:KrystalVaultV3Factory",
       config.uniswapV3Factory,
+      existingContract?.["depositorVaultV3"],
     )) as KrystalVaultV3Factory;
   }
   return {
