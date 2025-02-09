@@ -38,6 +38,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   uint256 public deltaScale = 10_000; /// must be a power of 10
   uint256 public priceThreshold = 10_000;
   uint256 public constant MAX_UINT = type(uint256).max;
+  uint256 public constant HALF_PRECISION = 1e18;
   uint256 public constant PRECISION = 1e36;
 
   constructor() {
@@ -264,13 +265,12 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     uint256 _priceThreshold
   ) public view override returns (uint256 price) {
     (uint160 sqrtPrice, , , , , , ) = IKrystalVaultV3(pos).pool().slot0();
-    price = FullMath.mulDiv(uint256(sqrtPrice).mul(uint256(sqrtPrice)), PRECISION, 2 ** (96 * 2));
+    uint256 tmpSqrtPrice = FullMath.mulDiv(uint256(sqrtPrice), HALF_PRECISION, 2 ** 96);
+    price = tmpSqrtPrice.mul(tmpSqrtPrice);
+
     uint160 sqrtPriceBefore = getSqrtTwapX96(pos, _twapInterval);
-    uint256 priceBefore = FullMath.mulDiv(
-      uint256(sqrtPriceBefore).mul(uint256(sqrtPriceBefore)),
-      PRECISION,
-      2 ** (96 * 2)
-    );
+    uint256 tmpSqrtPriceBefore = FullMath.mulDiv(uint256(sqrtPriceBefore), HALF_PRECISION, 2 ** 96);
+    uint256 priceBefore = tmpSqrtPriceBefore.mul(tmpSqrtPriceBefore);
 
     if (price.mul(10_000).div(priceBefore) > _priceThreshold || priceBefore.mul(10_000).div(price) > _priceThreshold)
       revert("Price change overflow");
