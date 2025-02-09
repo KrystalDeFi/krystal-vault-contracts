@@ -79,6 +79,10 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
     return krystalVaultV3;
   }
 
+  /**
+   * @notice Set the depositor address
+   * @param _depositor The address of the new depositor
+   */
   function setDepositor(address _depositor) external override onlyOwner {
     depositor = _depositor;
 

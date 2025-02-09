@@ -391,7 +391,7 @@
   },
   {
     "inputs": [],
-    "name": "ADMIN_ROLE",
+    "name": "ADMIN_ROLE_HASH",
     "outputs": [
       {
         "internalType": "bytes32",
@@ -443,7 +443,7 @@
   },
   {
     "inputs": [],
-    "name": "OPERATOR_ROLE",
+    "name": "OPERATOR_ROLE_HASH",
     "outputs": [
       {
         "internalType": "bytes32",

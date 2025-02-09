@@ -33,7 +33,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   IERC20 public override token0;
   IERC20 public override token1;
 
-  bool public directDeposit; /// enter uni on deposit (avoid if client uses public rpc)
+  bool public directDeposit; // If true, deposits will be directly added to Uniswap. Avoid using this if the client uses a public RPC.
   bool public mintCalled;
   uint8 public fee = 5;
   int24 public tickSpacing;
@@ -95,7 +95,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint256[4] memory inMin
   ) external override nonReentrant onlyDepositor returns (uint256 shares) {
     require(deposit0 > 0 || deposit1 > 0, "deposit amount should not be zero");
-    require(to != address(0) && to != address(this), "to");
+    require(to != address(0) && to != address(this), "invalid to address");
 
     /// update fees
     zeroBurn();
@@ -137,9 +137,9 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
       }
     }
 
-    _mint(to, shares);
+    require(maxTotalSupply == 0 || total.add(shares) <= maxTotalSupply, "maxTotalSupply exceeded");
 
-    require(maxTotalSupply == 0 || total <= maxTotalSupply, "maxTotalSupply exceeded");
+    _mint(to, shares);
 
     emit Deposit(from, to, shares, deposit0, deposit1);
 
@@ -161,8 +161,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
       emit ZeroBurn(fee, owed0, owed1);
 
-      if (owed0.div(fee) > 0 && token0.balanceOf(address(this)) > 0) token0.safeTransfer(feeRecipient, owed0.div(fee));
-      if (owed1.div(fee) > 0 && token1.balanceOf(address(this)) > 0) token1.safeTransfer(feeRecipient, owed1.div(fee));
+      uint256 feeAmount0 = owed0.div(fee);
+      uint256 feeAmount1 = owed1.div(fee);
+
+      if (feeAmount0 > 0 && token0.balanceOf(address(this)) > 0) token0.safeTransfer(feeRecipient, feeAmount0);
+      if (feeAmount1 > 0 && token1.balanceOf(address(this)) > 0) token1.safeTransfer(feeRecipient, feeAmount1);
     }
 
     return liquidity;
@@ -220,8 +223,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     address from,
     uint256[4] memory minAmounts
   ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
-    require(shares > 0, "shares");
-    require(to != address(0), "to");
+    require(shares > 0, "invalid shares");
+    require(to != address(0), "invalid to address");
 
     /// update fees
     zeroBurn();
@@ -256,7 +259,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     amount0 = base0.add(limit0).add(unusedAmount0);
     amount1 = base1.add(limit1).add(unusedAmount1);
 
-    require(from == _msgSender(), "own");
+    require(from == _msgSender(), "caller should be the owner");
 
     _burn(from, shares);
 
@@ -536,7 +539,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   /// @param tickLower The lower tick of the position
   /// @param tickUpper The upper tick of the position
   /// @param amount0 The amount of token0
-  /// @param amount0 The amount of token1
+  /// @param amount1 The amount of token1
   /// @return Amount of liquidity tokens
   function _liquidityForAmounts(
     int24 tickLower,

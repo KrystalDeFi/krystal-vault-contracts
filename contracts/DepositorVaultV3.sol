@@ -26,8 +26,8 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   using SafeMath for uint256;
   using SignedSafeMath for int256;
 
-  bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-  bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
+  bytes32 public constant ADMIN_ROLE_HASH = keccak256("ADMIN_ROLE");
+  bytes32 public constant OPERATOR_ROLE_HASH = keccak256("OPERATOR_ROLE");
 
   mapping(address => VaultConfig) public vaultConfigs;
   mapping(address => mapping(address => bool)) public whitelistDepositList;
@@ -35,7 +35,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   bool public twapCheck = true;
   uint32 public twapInterval = 3600;
   uint256 public depositDelta = 10_010;
-  uint256 public deltaScale = 10_000; /// must be a power of 10
+  uint256 public deltaScale = 10_000; // must be a power of 10
   uint256 public priceThreshold = 10_000;
   uint256 public constant MAX_UINT = type(uint256).max;
   uint256 public constant HALF_PRECISION = 1e18;
@@ -43,29 +43,29 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
 
   constructor() {
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-    _setupRole(ADMIN_ROLE, _msgSender());
-    _setupRole(OPERATOR_ROLE, _msgSender());
+    _setupRole(ADMIN_ROLE_HASH, _msgSender());
+    _setupRole(OPERATOR_ROLE_HASH, _msgSender());
   }
 
   modifier onlyAdmin() {
-    require(hasRole(ADMIN_ROLE, _msgSender()), "Unauthorized");
+    require(hasRole(ADMIN_ROLE_HASH, _msgSender()), "Unauthorized");
     _;
   }
 
   modifier onlyOperator() {
-    require(hasRole(OPERATOR_ROLE, _msgSender()), "Unauthorized");
+    require(hasRole(OPERATOR_ROLE_HASH, _msgSender()), "Unauthorized");
     _;
   }
 
   modifier onlyExistedConfig(address pos) {
     VaultConfig storage p = vaultConfigs[pos];
-    require(p.version != 0, "config not found");
+    require(p.version != 0, "Vault configuration not found");
     _;
   }
 
   modifier onlySupplyAvailable(address pos) {
     if (vaultConfigs[pos].maxTotalSupply != 0) {
-      require(IERC20(pos).totalSupply() <= vaultConfigs[pos].maxTotalSupply, "exceeds max supply");
+      require(IERC20(pos).totalSupply() <= vaultConfigs[pos].maxTotalSupply, "Total supply exceeds maximum allowed");
     }
     _;
   }
@@ -98,14 +98,14 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     if (!whitelistDepositList[pos][from]) {
       require(deposit0 > 0 && deposit1 > 0, "must deposit to both sides");
       (uint256 test1Min, uint256 test1Max) = getDepositAmount(pos, address(IKrystalVaultV3(pos).token0()), deposit0);
-      require(deposit1 >= test1Min && deposit1 <= test1Max, "Improper ratio");
+      require(deposit1 >= test1Min && deposit1 <= test1Max, "Deposit amount ratio is improper");
 
       (uint256 test0Min, uint256 test0Max) = getDepositAmount(pos, address(IKrystalVaultV3(pos).token1()), deposit1);
-      require(deposit0 >= test0Min && deposit0 <= test0Max, "Improper ratio");
+      require(deposit0 >= test0Min && deposit0 <= test0Max, "Deposit amount ratio is improper");
 
       if (p.depositOverride) {
-        require(deposit0 <= p.deposit0Max, "token0 exceeds");
-        require(deposit1 <= p.deposit1Max, "token1 exceeds");
+        require(deposit0 <= p.deposit0Max, "Deposit amount of token0 exceeds maximum allowed");
+        require(deposit1 <= p.deposit1Max, "Deposit amount of token1 exceeds maximum allowed");
       }
     }
     _;
@@ -113,13 +113,13 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
 
   function grantOperatorRole(address[] calldata operators) external override onlyAdmin {
     for (uint256 i = 0; i < operators.length; i++) {
-      grantRole(OPERATOR_ROLE, operators[i]);
+      grantRole(OPERATOR_ROLE_HASH, operators[i]);
     }
   }
 
   function revokeOperatorRole(address[] calldata operators) external override onlyAdmin {
     for (uint256 i = 0; i < operators.length; i++) {
-      revokeRole(OPERATOR_ROLE, operators[i]);
+      revokeRole(OPERATOR_ROLE_HASH, operators[i]);
     }
   }
 
@@ -129,8 +129,8 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   function addConfig(address pos, uint8 version) external override onlyOperator {
     VaultConfig storage p = vaultConfigs[pos];
 
-    require(p.version == 0, "config already exists");
-    require(version > 0, "invalid version");
+    require(p.version == 0, "Vault configuration already exists");
+    require(version > 0, "Invalid vault version");
 
     p.version = version;
 
@@ -194,9 +194,9 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   ) public view override returns (uint256 amountStart, uint256 amountEnd) {
     require(
       token == address(IKrystalVaultV3(pos).token0()) || token == address(IKrystalVaultV3(pos).token1()),
-      "token mismatch"
+      "Token address mismatch"
     );
-    require(_deposit > 0, "deposits should not be zero");
+    require(_deposit > 0, "Deposit amount must be greater than zero");
 
     (uint256 total0, uint256 total1) = IKrystalVaultV3(pos).getTotalAmounts();
 
@@ -226,8 +226,8 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   /// @notice Get range for deposit based on provided amounts
   /// @param pos KrystalVaultV3 Address
   /// @param token Address of token to deposit
-  /// @param total0 Amount of token0 in hype
-  /// @param total1 Amount of token1 in hype
+  /// @param total0 Amount of token0 in vault
+  /// @param total1 Amount of token1 in vault
   /// @return ratioStart Minimum amounts of the pair token to deposit
   /// @return ratioEnd Maximum amounts of the pair token to deposit
   function getRatioRange(
@@ -273,7 +273,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     uint256 priceBefore = tmpSqrtPriceBefore.mul(tmpSqrtPriceBefore);
 
     if (price.mul(10_000).div(priceBefore) > _priceThreshold || priceBefore.mul(10_000).div(price) > _priceThreshold)
-      revert("Price change overflow");
+      revert("Price change exceeds threshold");
 
     return price;
   }
@@ -310,14 +310,14 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
   /// @return sqrtPriceX96 Sqrt price before interval
   function getSqrtTwapX96(address pos, uint32 _twapInterval) public view override returns (uint160 sqrtPriceX96) {
     if (_twapInterval == 0) {
-      /// return the current price if _twapInterval == 0
+      // return the current price if _twapInterval == 0
       (sqrtPriceX96, , , , , , ) = IKrystalVaultV3(pos).pool().slot0();
     } else {
       uint32[] memory secondsAgos = new uint32[](2);
-      secondsAgos[0] = _twapInterval; /// from (before)
-      secondsAgos[1] = 0; /// to (now)
+      secondsAgos[0] = _twapInterval; // from (before)
+      secondsAgos[1] = 0; // to (now)
       (int56[] memory tickCumulatives, ) = IKrystalVaultV3(pos).pool().observe(secondsAgos);
-      /// tick(imprecise as it's an integer) to price
+      // tick(imprecise as it's an integer) to price
       sqrtPriceX96 = TickMath.getSqrtRatioAtTick(int24((tickCumulatives[1] - tickCumulatives[0]) / _twapInterval));
     }
 
@@ -366,7 +366,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     emit CustomRatio(pos, fauxTotal0, fauxTotal1);
   }
 
-  // @note permanently remove ability to apply custom ratio to hype
+  /// @notice Permanently remove ability to apply custom ratio to vault
   function removeRatio(address pos) external override onlyOperator onlyExistedConfig(pos) {
     VaultConfig storage p = vaultConfigs[pos];
 
@@ -421,7 +421,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     emit TwapCheckSet(_twapCheck);
   }
 
-  // @notice check if an address is whitelisted for hype
+  /// @notice check if an address is whitelisted for vault
   function getWhitelistDeposit(address pos, address i) public view override returns (bool) {
     return whitelistDepositList[pos][i];
   }
