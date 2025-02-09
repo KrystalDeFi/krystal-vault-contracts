@@ -60,7 +60,7 @@ interface IDepositorVaultV3 {
     uint256 deposit1,
     address to,
     address pos,
-    uint256[4] memory minIn
+    uint256[2] memory minIn
   ) external returns (uint256 shares);
 
   function getDepositAmount(

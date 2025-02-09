@@ -341,9 +341,9 @@
   {
     "inputs": [
       {
-        "internalType": "uint256[4]",
+        "internalType": "uint256[2]",
         "name": "inMin",
-        "type": "uint256[4]"
+        "type": "uint256[2]"
       }
     ],
     "name": "compound",
@@ -387,9 +387,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256[4]",
+        "internalType": "uint256[2]",
         "name": "inMin",
-        "type": "uint256[4]"
+        "type": "uint256[2]"
       }
     ],
     "name": "deposit",
@@ -406,29 +406,6 @@
   {
     "inputs": [],
     "name": "getBasePosition",
-    "outputs": [
-      {
-        "internalType": "uint128",
-        "name": "liquidity",
-        "type": "uint128"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount0",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount1",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "getLimitPosition",
     "outputs": [
       {
         "internalType": "uint128",
@@ -532,29 +509,19 @@
         "type": "int24"
       },
       {
-        "internalType": "int24",
-        "name": "_limitLower",
-        "type": "int24"
-      },
-      {
-        "internalType": "int24",
-        "name": "_limitUpper",
-        "type": "int24"
-      },
-      {
         "internalType": "address",
         "name": "_feeRecipient",
         "type": "address"
       },
       {
-        "internalType": "uint256[4]",
+        "internalType": "uint256[2]",
         "name": "inMin",
-        "type": "uint256[4]"
+        "type": "uint256[2]"
       },
       {
-        "internalType": "uint256[4]",
+        "internalType": "uint256[2]",
         "name": "outMin",
-        "type": "uint256[4]"
+        "type": "uint256[2]"
       }
     ],
     "name": "rebalance",
@@ -626,9 +593,9 @@
         "type": "address"
       },
       {
-        "internalType": "uint256[4]",
+        "internalType": "uint256[2]",
         "name": "minAmounts",
-        "type": "uint256[4]"
+        "type": "uint256[2]"
       }
     ],
     "name": "withdraw",

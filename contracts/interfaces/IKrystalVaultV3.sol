@@ -39,7 +39,7 @@ interface IKrystalVaultV3 {
     uint256 deposit1,
     address to,
     address from,
-    uint256[4] memory inMin
+    uint256[2] memory inMin
   ) external returns (uint256 shares);
 
   function pullLiquidity(
@@ -53,20 +53,18 @@ interface IKrystalVaultV3 {
     uint256 shares,
     address to,
     address from,
-    uint256[4] memory minAmounts
+    uint256[2] memory minAmounts
   ) external returns (uint256 amount0, uint256 amount1);
 
   function rebalance(
     int24 _baseLower,
     int24 _baseUpper,
-    int24 _limitLower,
-    int24 _limitUpper,
     address _feeRecipient,
-    uint256[4] memory inMin,
-    uint256[4] memory outMin
+    uint256[2] memory inMin,
+    uint256[2] memory outMin
   ) external;
 
-  function compound(uint256[4] memory inMin) external;
+  function compound(uint256[2] memory inMin) external;
 
   function addLiquidity(
     int24 tickLower,
@@ -79,8 +77,6 @@ interface IKrystalVaultV3 {
   function getTotalAmounts() external view returns (uint256 total0, uint256 total1);
 
   function getBasePosition() external view returns (uint128 liquidity, uint256 amount0, uint256 amount1);
-
-  function getLimitPosition() external view returns (uint128 liquidity, uint256 amount0, uint256 amount1);
 
   function currentTick() external view returns (int24 tick);
 

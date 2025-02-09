@@ -41,9 +41,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   int24 public override baseLower;
   int24 public override baseUpper;
 
-  int24 public limitLower;
-  int24 public limitUpper;
-
   uint256 public maxTotalSupply;
 
   address public feeRecipient;
@@ -92,7 +89,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint256 deposit1,
     address to,
     address from,
-    uint256[4] memory inMin
+    uint256[2] memory inMin
   ) external override nonReentrant onlyDepositor returns (uint256 shares) {
     require(deposit0 > 0 || deposit1 > 0, "deposit amount should not be zero");
     require(to != address(0) && to != address(this), "invalid to address");
@@ -127,13 +124,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
           token1.balanceOf(address(this))
         );
         _mintLiquidity(baseLower, baseUpper, liquidity, address(this), inMin[0], inMin[1]);
-        liquidity = _liquidityForAmounts(
-          limitLower,
-          limitUpper,
-          token0.balanceOf(address(this)),
-          token1.balanceOf(address(this))
-        );
-        _mintLiquidity(limitLower, limitUpper, liquidity, address(this), inMin[2], inMin[3]);
       }
     }
 
@@ -173,12 +163,10 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
   /// @notice Update fees of the positions
   /// @return baseLiquidity Fee of base position
-  /// @return limitLiquidity Fee of limit position
-  function zeroBurn() internal returns (uint128 baseLiquidity, uint128 limitLiquidity) {
+  function zeroBurn() internal returns (uint128 baseLiquidity) {
     baseLiquidity = _zeroBurn(baseLower, baseUpper);
-    limitLiquidity = _zeroBurn(limitLower, limitUpper);
 
-    return (baseLiquidity, limitLiquidity);
+    return (baseLiquidity);
   }
 
   /// @notice Pull liquidity tokens from liquidity and receive the tokens
@@ -221,7 +209,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint256 shares,
     address to,
     address from,
-    uint256[4] memory minAmounts
+    uint256[2] memory minAmounts
   ) external override nonReentrant returns (uint256 amount0, uint256 amount1) {
     require(shares > 0, "invalid shares");
     require(to != address(0), "invalid to address");
@@ -239,15 +227,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
       minAmounts[0],
       minAmounts[1]
     );
-    (uint256 limit0, uint256 limit1) = _burnLiquidity(
-      limitLower,
-      limitUpper,
-      _liquidityForShares(limitLower, limitUpper, shares),
-      to,
-      false,
-      minAmounts[2],
-      minAmounts[3]
-    );
 
     // Push tokens proportional to unused balances
     uint256 unusedAmount0 = token0.balanceOf(address(this)).mul(shares).div(totalSupply());
@@ -256,8 +235,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     if (unusedAmount0 > 0) token0.safeTransfer(to, unusedAmount0);
     if (unusedAmount1 > 0) token1.safeTransfer(to, unusedAmount1);
 
-    amount0 = base0.add(limit0).add(unusedAmount0);
-    amount1 = base1.add(limit1).add(unusedAmount1);
+    amount0 = base0.add(unusedAmount0);
+    amount1 = base1.add(unusedAmount1);
 
     require(from == _msgSender(), "caller should be the owner");
 
@@ -270,29 +249,20 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
 
   /// @param _baseLower The lower tick of the base position
   /// @param _baseUpper The upper tick of the base position
-  /// @param _limitLower The lower tick of the limit position
-  /// @param _limitUpper The upper tick of the limit position
   /// @param  inMin min spend
   /// @param  outMin min amount0,1 returned for shares of liq
   /// @param _feeRecipient Address of recipient of 10% of earned fees since last rebalance
   function rebalance(
     int24 _baseLower,
     int24 _baseUpper,
-    int24 _limitLower,
-    int24 _limitUpper,
     address _feeRecipient,
-    uint256[4] memory inMin,
-    uint256[4] memory outMin
+    uint256[2] memory inMin,
+    uint256[2] memory outMin
   ) external override nonReentrant onlyOwner {
     require(
       _baseLower < _baseUpper && _baseLower % tickSpacing == 0 && _baseUpper % tickSpacing == 0,
       "invalid price range"
     );
-    require(
-      _limitLower < _limitUpper && _limitLower % tickSpacing == 0 && _limitUpper % tickSpacing == 0,
-      "invalid limit range"
-    );
-    require(_limitUpper != _baseUpper || _limitLower != _baseLower, "invalid limit condition");
     require(_feeRecipient != address(0), "feeRecipient should be non-zero");
 
     feeRecipient = _feeRecipient;
@@ -301,18 +271,16 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     zeroBurn();
 
     /// Withdraw all liquidity and collect all fees from Uniswap pool
-    (uint128 baseLiquidity, uint256 feesLimit0, uint256 feesLimit1) = _position(baseLower, baseUpper);
-    (uint128 limitLiquidity, uint256 feesBase0, uint256 feesBase1) = _position(limitLower, limitUpper);
+    (uint128 baseLiquidity, uint256 feesBase0, uint256 feesBase1) = _position(baseLower, baseUpper);
 
     _burnLiquidity(baseLower, baseUpper, baseLiquidity, address(this), true, outMin[0], outMin[1]);
-    _burnLiquidity(limitLower, limitUpper, limitLiquidity, address(this), true, outMin[2], outMin[3]);
 
     emit Rebalance(
       currentTick(),
       token0.balanceOf(address(this)),
       token1.balanceOf(address(this)),
-      feesBase0.add(feesLimit0),
-      feesBase1.add(feesLimit1),
+      feesBase0,
+      feesBase1,
       totalSupply()
     );
 
@@ -325,21 +293,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
       token1.balanceOf(address(this))
     );
     _mintLiquidity(baseLower, baseUpper, baseLiquidity, address(this), inMin[0], inMin[1]);
-
-    limitLower = _limitLower;
-    limitUpper = _limitUpper;
-    limitLiquidity = _liquidityForAmounts(
-      limitLower,
-      limitUpper,
-      token0.balanceOf(address(this)),
-      token1.balanceOf(address(this))
-    );
-    _mintLiquidity(limitLower, limitUpper, limitLiquidity, address(this), inMin[2], inMin[3]);
   }
 
   /// @notice Compound pending fees
   /// @param inMin min spend
-  function compound(uint256[4] memory inMin) external override onlyOwner {
+  function compound(uint256[2] memory inMin) external override onlyOwner {
     // update fees for compounding
     zeroBurn();
 
@@ -350,14 +308,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
       token1.balanceOf(address(this))
     );
     _mintLiquidity(baseLower, baseUpper, liquidity, address(this), inMin[0], inMin[1]);
-
-    liquidity = _liquidityForAmounts(
-      limitLower,
-      limitUpper,
-      token0.balanceOf(address(this)),
-      token1.balanceOf(address(this))
-    );
-    _mintLiquidity(limitLower, limitUpper, liquidity, address(this), inMin[2], inMin[3]);
 
     emit Compound(currentTick(), token0.balanceOf(address(this)), token1.balanceOf(address(this)), totalSupply());
   }
@@ -478,9 +428,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
   function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
     (, uint256 base0, uint256 base1) = getBasePosition();
-    (, uint256 limit0, uint256 limit1) = getLimitPosition();
-    total0 = token0.balanceOf(address(this)).add(base0).add(limit0);
-    total1 = token1.balanceOf(address(this)).add(base1).add(limit1);
+    total0 = token0.balanceOf(address(this)).add(base0);
+    total1 = token1.balanceOf(address(this)).add(base1);
 
     return (total0, total1);
   }
@@ -493,21 +442,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   function getBasePosition() public view override returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
     (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(baseLower, baseUpper);
     (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, positionLiquidity);
-    amount0 = amount0.add(uint256(tokensOwed0));
-    amount1 = amount1.add(uint256(tokensOwed1));
-    liquidity = positionLiquidity;
-
-    return (liquidity, amount0, amount1);
-  }
-
-  /// @return liquidity Amount of total liquidity in the limit position
-  /// @return amount0 Estimated amount of token0 that could be collected by
-  /// burning the limit position
-  /// @return amount1 Estimated amount of token1 that could be collected by
-  /// burning the limit position
-  function getLimitPosition() public view override returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
-    (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(limitLower, limitUpper);
-    (amount0, amount1) = _amountsForLiquidity(limitLower, limitUpper, positionLiquidity);
     amount0 = amount0.add(uint256(tokensOwed0));
     amount1 = amount1.add(uint256(tokensOwed1));
     liquidity = positionLiquidity;

@@ -152,7 +152,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     uint256 deposit1,
     address to,
     address pos,
-    uint256[4] memory minIn
+    uint256[2] memory minIn
   )
     external
     override
@@ -172,7 +172,7 @@ contract DepositorVaultV3 is AccessControl, Pausable, ReentrancyGuard, IDeposito
     uint256 deposit1,
     address to,
     address pos,
-    uint256[4] memory minIn
+    uint256[2] memory minIn
   ) internal returns (uint256 shares) {
     shares = IKrystalVaultV3(pos).deposit(deposit0, deposit1, to, _msgSender(), minIn);
 
