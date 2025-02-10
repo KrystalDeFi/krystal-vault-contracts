@@ -1,17 +1,19 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-pragma solidity 0.7.6;
+pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/math/Math.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/math/SignedSafeMath.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SignedMath.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
@@ -23,8 +25,8 @@ import "./interfaces/IKrystalVaultV3.sol";
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
 contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV3 {
   using SafeERC20 for IERC20;
-  using SafeMath for uint256;
-  using SignedSafeMath for int256;
+  using Math for uint256;
+  using SignedMath for int256;
 
   IUniswapV3Pool public override pool;
   IERC20 public override token0;
@@ -48,7 +50,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     address _owner,
     string memory name,
     string memory symbol
-  ) ERC20Permit(name) ERC20(name, symbol) {
+  ) ERC20(name, symbol) ERC20Permit(name) Ownable(_owner) {
     require(_pool != address(0), "pool should be non-zero");
     require(_owner != address(0), "owner should be non-zero");
 
@@ -61,8 +63,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     tickSpacing = pool.tickSpacing();
     maxTotalSupply = 0;
-
-    transferOwnership(_owner);
   }
 
   /// @notice Deposit tokens
@@ -90,7 +90,10 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     (uint256 pool0, uint256 pool1) = getTotalAmounts();
 
-    shares = deposit1.add(deposit0.mul(priceX96).div(FixedPoint96.Q96));
+    // shares = deposit1 + (deposit0 * priceX96 / Q96)
+    (, shares) = deposit0.tryMul(priceX96);
+    (, shares) = shares.tryDiv(FixedPoint96.Q96);
+    (, shares) = deposit1.tryAdd(shares);
 
     if (deposit0 > 0) {
       token0.safeTransferFrom(from, address(this), deposit0);
@@ -102,8 +105,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     uint256 total = totalSupply();
 
     if (total != 0) {
-      uint256 pool0PricedInToken1 = pool0.mul(priceX96).div(FixedPoint96.Q96);
-      shares = shares.mul(total).div(pool0PricedInToken1.add(pool1));
+      (, uint256 pool0PricedInToken1) = pool0.tryMul(priceX96);
+      (, pool0PricedInToken1) = pool0PricedInToken1.tryDiv(FixedPoint96.Q96);
+      (, pool0PricedInToken1) = pool0PricedInToken1.tryAdd(pool1);
+      (, shares) = shares.tryMul(total);
+      (, shares) = shares.tryDiv(pool0PricedInToken1);
       uint128 liquidity = _liquidityForAmounts(
         baseLower,
         baseUpper,
@@ -113,7 +119,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       _mintLiquidity(baseLower, baseUpper, liquidity, address(this), inMin[0], inMin[1]);
     }
 
-    require(maxTotalSupply == 0 || total.add(shares) <= maxTotalSupply, "maxTotalSupply exceeded");
+    (, uint256 totalAfterShares) = total.tryAdd(shares);
+    require(maxTotalSupply == 0 || totalAfterShares <= maxTotalSupply, "maxTotalSupply exceeded");
 
     _mint(to, shares);
 
@@ -182,14 +189,16 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     );
 
     // Push tokens proportional to unused balances
-    uint256 unusedAmount0 = token0.balanceOf(address(this)).mul(shares).div(totalSupply());
-    uint256 unusedAmount1 = token1.balanceOf(address(this)).mul(shares).div(totalSupply());
+    (, uint256 unusedAmount0) = token0.balanceOf(address(this)).tryMul(shares);
+    (, unusedAmount0) = unusedAmount0.tryDiv(totalSupply());
+    (, uint256 unusedAmount1) = token1.balanceOf(address(this)).tryMul(shares);
+    (, unusedAmount1) = unusedAmount1.tryDiv(totalSupply());
 
     if (unusedAmount0 > 0) token0.safeTransfer(to, unusedAmount0);
     if (unusedAmount1 > 0) token1.safeTransfer(to, unusedAmount1);
 
-    amount0 = base0.add(unusedAmount0);
-    amount1 = base1.add(unusedAmount1);
+    (, amount0) = base0.tryAdd(unusedAmount0);
+    (, amount1) = base1.tryAdd(unusedAmount1);
 
     require(from == _msgSender(), "caller should be the owner");
 
@@ -297,8 +306,10 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
       emit FeeCollected(fee, owed0, owed1);
 
-      uint256 feeAmount0 = owed0.mul(fee).div(10000);
-      uint256 feeAmount1 = owed1.mul(fee).div(10000);
+      (, uint256 feeAmount0) = owed0.tryMul(fee);
+      (, feeAmount0) = feeAmount0.tryDiv(10000);
+      (, uint256 feeAmount1) = owed1.tryMul(fee);
+      (, feeAmount1) = feeAmount1.tryDiv(10000);
 
       if (feeAmount0 > 0 && token0.balanceOf(address(this)) > 0) token0.safeTransfer(feeRecipient, feeAmount0);
       if (feeAmount1 > 0 && token1.balanceOf(address(this)) > 0) token1.safeTransfer(feeRecipient, feeAmount1);
@@ -369,10 +380,12 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   /// @param tickLower The lower tick of the position
   /// @param tickUpper The upper tick of the position
   /// @param shares Shares of position
-  /// @return The amount of liquidity toekn for shares
+  /// @return The amount of liquidity token for shares
   function _liquidityForShares(int24 tickLower, int24 tickUpper, uint256 shares) internal view returns (uint128) {
     (uint128 position, , ) = _position(tickLower, tickUpper);
-    return _uint128Safe(uint256(position).mul(shares).div(totalSupply()));
+    (, uint256 totalShares) = uint256(position).tryMul(shares);
+    (, totalShares) = totalShares.tryDiv(totalSupply());
+    return _uint128Safe(totalShares);
   }
 
   /// @notice Get the info of the given position
@@ -406,8 +419,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
   function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
     (, uint256 base0, uint256 base1) = getBasePosition();
-    total0 = token0.balanceOf(address(this)).add(base0);
-    total1 = token1.balanceOf(address(this)).add(base1);
+    (, total0) = token0.balanceOf(address(this)).tryAdd(base0);
+    (, total1) = token1.balanceOf(address(this)).tryAdd(base1);
 
     return (total0, total1);
   }
@@ -420,8 +433,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   function getBasePosition() public view override returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
     (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position(baseLower, baseUpper);
     (amount0, amount1) = _amountsForLiquidity(baseLower, baseUpper, positionLiquidity);
-    amount0 = amount0.add(uint256(tokensOwed0));
-    amount1 = amount1.add(uint256(tokensOwed1));
+    (, amount0) = amount0.tryAdd(uint256(tokensOwed0));
+    (, amount1) = amount1.tryAdd(uint256(tokensOwed1));
     liquidity = positionLiquidity;
 
     return (liquidity, amount0, amount1);

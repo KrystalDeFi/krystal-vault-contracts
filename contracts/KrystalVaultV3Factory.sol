@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.7.6;
+pragma solidity ^0.8.28;
 
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 
@@ -17,7 +17,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
 
   address[] public allVaults;
 
-  constructor(address _uniswapV3Factory) {
+  constructor(address _uniswapV3Factory) Ownable(_msgSender()) {
     require(_uniswapV3Factory != address(0), "uniswapV3Factory should be non-zero");
     uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
   }

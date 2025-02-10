@@ -40,7 +40,7 @@
     "reentrancy": "warn",
     "state-visibility": "warn",
     "code-complexity": ["error", 9],
-    "compiler-version": ["error", ">=0.7.6"],
+    "compiler-version": ["error", ">=0.8.28"],
     "func-name-mixedcase": "off",
     "func-visibility": ["error", { "ignoreConstructors": true }],
     "max-line-length": ["off"],
