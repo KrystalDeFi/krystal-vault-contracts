@@ -26,7 +26,7 @@ interface IKrystalVaultV3 {
 
   event AddLiquidity(int24 tickLower, int24 tickUpper, uint256 amount0, uint256 amount1);
 
-  event ZeroBurn(uint8 fee, uint256 fees0, uint256 fees1);
+  event FeeCollected(uint8 fee, uint256 fees0, uint256 fees1);
 
   event SetWhitelist(address indexed _address);
 
@@ -81,8 +81,6 @@ interface IKrystalVaultV3 {
   function currentTick() external view returns (int24 tick);
 
   function setFee(uint8 newFee) external;
-
-  function toggleDirectDeposit() external;
 
   function token0() external view returns (IERC20);
 

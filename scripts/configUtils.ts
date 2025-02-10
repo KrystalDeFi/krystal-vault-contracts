@@ -5,10 +5,6 @@ export interface IConfig {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
-  depositorVaultV3?: {
-    enabled?: boolean;
-    autoVerifyContract?: boolean;
-  };
   // For proxy admin
   proxyAdminMultisig?: string;
   // For managing the config and admin jobs

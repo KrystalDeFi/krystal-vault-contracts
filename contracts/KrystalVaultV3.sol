@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/drafts/ERC20Permit.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3MintCallback.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
@@ -22,20 +21,17 @@ import "./interfaces/IKrystalVaultV3.sol";
 /// @title KrystalVaultV3
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
-contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3MintCallback, IKrystalVaultV3 {
+contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV3 {
   using SafeERC20 for IERC20;
   using SafeMath for uint256;
   using SignedSafeMath for int256;
-
-  address public depositor;
 
   IUniswapV3Pool public override pool;
   IERC20 public override token0;
   IERC20 public override token1;
 
-  bool public directDeposit; // If true, deposits will be directly added to Uniswap. Avoid using this if the client uses a public RPC.
   bool public mintCalled;
-  uint8 public fee = 5;
+  uint8 public fee = 100; // fee in basis points
   int24 public tickSpacing;
 
   int24 public override baseLower;
@@ -50,15 +46,12 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   constructor(
     address _pool,
     address _owner,
-    address _depositor,
     string memory name,
     string memory symbol
   ) ERC20Permit(name) ERC20(name, symbol) {
     require(_pool != address(0), "pool should be non-zero");
     require(_owner != address(0), "owner should be non-zero");
-    require(_depositor != address(0), "depositor should be non-zero");
 
-    depositor = _depositor;
     pool = IUniswapV3Pool(_pool);
     token0 = IERC20(pool.token0());
     token1 = IERC20(pool.token1());
@@ -72,17 +65,12 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     transferOwnership(_owner);
   }
 
-  modifier onlyDepositor() {
-    require(_msgSender() == depositor, "Unauthorized");
-    _;
-  }
-
   /// @notice Deposit tokens
   /// @param deposit0 Amount of token0 transferred from sender to KrystalVaultV3
   /// @param deposit1 Amount of token1 transferred from sender to KrystalVaultV3
   /// @param to Address to which liquidity tokens are minted
   /// @param from Address from which asset tokens are transferred
-  /// @param inMin min spend for directDeposit is true
+  /// @param inMin min spend
   /// @return shares Quantity of liquidity tokens minted as a result of deposit
   function deposit(
     uint256 deposit0,
@@ -90,12 +78,12 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     address to,
     address from,
     uint256[2] memory inMin
-  ) external override nonReentrant onlyDepositor returns (uint256 shares) {
+  ) external override nonReentrant returns (uint256 shares) {
     require(deposit0 > 0 || deposit1 > 0, "deposit amount should not be zero");
     require(to != address(0) && to != address(this), "invalid to address");
 
     /// update fees
-    zeroBurn();
+    _collectFees(baseLower, baseUpper);
 
     (uint160 sqrtPrice, , , , , , ) = pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
@@ -116,15 +104,13 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     if (total != 0) {
       uint256 pool0PricedInToken1 = pool0.mul(priceX96).div(FixedPoint96.Q96);
       shares = shares.mul(total).div(pool0PricedInToken1.add(pool1));
-      if (directDeposit) {
-        uint128 liquidity = _liquidityForAmounts(
-          baseLower,
-          baseUpper,
-          token0.balanceOf(address(this)),
-          token1.balanceOf(address(this))
-        );
-        _mintLiquidity(baseLower, baseUpper, liquidity, address(this), inMin[0], inMin[1]);
-      }
+      uint128 liquidity = _liquidityForAmounts(
+        baseLower,
+        baseUpper,
+        token0.balanceOf(address(this)),
+        token1.balanceOf(address(this))
+      );
+      _mintLiquidity(baseLower, baseUpper, liquidity, address(this), inMin[0], inMin[1]);
     }
 
     require(maxTotalSupply == 0 || total.add(shares) <= maxTotalSupply, "maxTotalSupply exceeded");
@@ -134,39 +120,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     emit Deposit(from, to, shares, deposit0, deposit1);
 
     return shares;
-  }
-
-  function _zeroBurn(int24 tickLower, int24 tickUpper) internal returns (uint128 liquidity) {
-    (liquidity, , ) = _position(tickLower, tickUpper);
-
-    if (liquidity > 0) {
-      pool.burn(tickLower, tickUpper, 0);
-      (uint256 owed0, uint256 owed1) = pool.collect(
-        address(this),
-        tickLower,
-        tickUpper,
-        type(uint128).max,
-        type(uint128).max
-      );
-
-      emit ZeroBurn(fee, owed0, owed1);
-
-      uint256 feeAmount0 = owed0.div(fee);
-      uint256 feeAmount1 = owed1.div(fee);
-
-      if (feeAmount0 > 0 && token0.balanceOf(address(this)) > 0) token0.safeTransfer(feeRecipient, feeAmount0);
-      if (feeAmount1 > 0 && token1.balanceOf(address(this)) > 0) token1.safeTransfer(feeRecipient, feeAmount1);
-    }
-
-    return liquidity;
-  }
-
-  /// @notice Update fees of the positions
-  /// @return baseLiquidity Fee of base position
-  function zeroBurn() internal returns (uint128 baseLiquidity) {
-    baseLiquidity = _zeroBurn(baseLower, baseUpper);
-
-    return (baseLiquidity);
   }
 
   /// @notice Pull liquidity tokens from liquidity and receive the tokens
@@ -182,7 +135,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint128 shares,
     uint256[2] memory amountMin
   ) external override onlyOwner returns (uint256 amount0, uint256 amount1) {
-    _zeroBurn(tickLower, tickUpper);
+    _collectFees(tickLower, tickUpper);
 
     (amount0, amount1) = _burnLiquidity(
       tickLower,
@@ -215,7 +168,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     require(to != address(0), "invalid to address");
 
     /// update fees
-    zeroBurn();
+    _collectFees(baseLower, baseUpper);
 
     /// Withdraw liquidity from Uniswap pool
     (uint256 base0, uint256 base1) = _burnLiquidity(
@@ -268,7 +221,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     feeRecipient = _feeRecipient;
 
     /// update fees
-    zeroBurn();
+    _collectFees(baseLower, baseUpper);
 
     /// Withdraw all liquidity and collect all fees from Uniswap pool
     (uint128 baseLiquidity, uint256 feesBase0, uint256 feesBase1) = _position(baseLower, baseUpper);
@@ -299,7 +252,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   /// @param inMin min spend
   function compound(uint256[2] memory inMin) external override onlyOwner {
     // update fees for compounding
-    zeroBurn();
+    _collectFees(baseLower, baseUpper);
 
     uint128 liquidity = _liquidityForAmounts(
       baseLower,
@@ -320,13 +273,38 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     uint256 amount1,
     uint256[2] memory inMin
   ) public override onlyOwner {
-    _zeroBurn(tickLower, tickUpper);
+    _collectFees(tickLower, tickUpper);
 
     uint128 liquidity = _liquidityForAmounts(tickLower, tickUpper, amount0, amount1);
 
     _mintLiquidity(tickLower, tickUpper, liquidity, address(this), inMin[0], inMin[1]);
 
     emit AddLiquidity(tickLower, tickUpper, amount0, amount1);
+  }
+
+  function _collectFees(int24 tickLower, int24 tickUpper) internal returns (uint128 liquidity) {
+    (liquidity, , ) = _position(tickLower, tickUpper);
+
+    if (liquidity > 0) {
+      pool.burn(tickLower, tickUpper, 0);
+      (uint256 owed0, uint256 owed1) = pool.collect(
+        address(this),
+        tickLower,
+        tickUpper,
+        type(uint128).max,
+        type(uint128).max
+      );
+
+      emit FeeCollected(fee, owed0, owed1);
+
+      uint256 feeAmount0 = owed0.mul(fee).div(10000);
+      uint256 feeAmount1 = owed1.mul(fee).div(10000);
+
+      if (feeAmount0 > 0 && token0.balanceOf(address(this)) > 0) token0.safeTransfer(feeRecipient, feeAmount0);
+      if (feeAmount1 > 0 && token1.balanceOf(address(this)) > 0) token1.safeTransfer(feeRecipient, feeAmount1);
+    }
+
+    return liquidity;
   }
 
   /// @notice Adds the liquidity for the given position
@@ -414,15 +392,15 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
   }
 
   /// @notice Callback function of uniswapV3Pool mint
-  function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
-    require(_msgSender() == address(pool), "sender should be pool");
-    require(mintCalled == true, "mintCalled is false");
+  // function uniswapV3MintCallback(uint256 amount0, uint256 amount1, bytes calldata data) external override {
+  //   require(_msgSender() == address(pool), "sender should be pool");
+  //   require(mintCalled == true, "mintCalled is false");
 
-    mintCalled = false;
+  //   mintCalled = false;
 
-    if (amount0 > 0) token0.safeTransfer(_msgSender(), amount0);
-    if (amount1 > 0) token1.safeTransfer(_msgSender(), amount1);
-  }
+  //   if (amount0 > 0) token0.safeTransfer(_msgSender(), amount0);
+  //   if (amount1 > 0) token1.safeTransfer(_msgSender(), amount1);
+  // }
 
   /// @return total0 Quantity of token0 in both positions and unused in the KrystalVaultV3
   /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
@@ -510,12 +488,5 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IUniswapV3Mint
     fee = newFee;
 
     emit SetFee(fee);
-  }
-
-  /// @notice Toggle Direct Deposit
-  function toggleDirectDeposit() external override onlyOwner {
-    directDeposit = !directDeposit;
-
-    emit ToggleDirectDeposit(directDeposit);
   }
 }

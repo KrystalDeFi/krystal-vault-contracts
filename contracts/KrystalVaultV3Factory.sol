@@ -13,16 +13,13 @@ import "./interfaces/IKrystalVaultV3Factory.sol";
 contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
   IUniswapV3Factory public uniswapV3Factory;
 
-  address public depositor;
-
   mapping(address => Vault[]) public vaultsByAddress;
 
   address[] public allVaults;
 
-  constructor(address _uniswapV3Factory, address _depositor) {
+  constructor(address _uniswapV3Factory) {
     require(_uniswapV3Factory != address(0), "uniswapV3Factory should be non-zero");
     uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
-    depositor = _depositor;
   }
 
   /// @notice Get the number of KrystalVaultV3 created
@@ -65,27 +62,16 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
       new KrystalVaultV3{ salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing)) }(
         pool,
         _msgSender(),
-        depositor,
         name,
         symbol
       )
     );
 
-    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), depositor, krystalVaultV3, token0, token1, fee));
+    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, token0, token1, fee));
     allVaults.push(krystalVaultV3);
 
-    emit VaultCreated(_msgSender(), token0, token1, fee, krystalVaultV3, allVaults.length);
+    emit VaultCreated(_msgSender(), krystalVaultV3, token0, token1, fee, allVaults.length);
 
     return krystalVaultV3;
-  }
-
-  /**
-   * @notice Set the depositor address
-   * @param _depositor The address of the new depositor
-   */
-  function setDepositor(address _depositor) external override onlyOwner {
-    depositor = _depositor;
-
-    emit DepositorSet(_depositor);
   }
 }

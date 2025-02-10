@@ -3,22 +3,15 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "address",
-        "name": "depositor",
-        "type": "address"
-      }
-    ],
-    "name": "DepositorSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "owner",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "krystalVaultV3",
         "type": "address"
       },
       {
@@ -38,12 +31,6 @@
         "internalType": "uint24",
         "name": "fee",
         "type": "uint24"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "krystalVaultV3",
-        "type": "address"
       },
       {
         "indexed": false,
@@ -104,19 +91,6 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_depositor",
-        "type": "address"
-      }
-    ],
-    "name": "setDepositor",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   }

@@ -103,6 +103,31 @@
     "inputs": [
       {
         "indexed": false,
+        "internalType": "uint8",
+        "name": "fee",
+        "type": "uint8"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fees0",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "fees1",
+        "type": "uint256"
+      }
+    ],
+    "name": "FeeCollected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
         "internalType": "int24",
         "name": "tickLower",
         "type": "int24"
@@ -252,31 +277,6 @@
       }
     ],
     "name": "Withdraw",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "fee",
-        "type": "uint8"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fees0",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "fees1",
-        "type": "uint256"
-      }
-    ],
-    "name": "ZeroBurn",
     "type": "event"
   },
   {
@@ -538,13 +538,6 @@
       }
     ],
     "name": "setFee",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "toggleDirectDeposit",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
