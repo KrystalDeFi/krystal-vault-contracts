@@ -5,11 +5,32 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
+import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
-interface IKrystalVaultV3 {
-  event Deposit(address indexed from, address indexed to, uint256 shares, uint256 deposit0, uint256 deposit1);
+import "./IKrystalVaultV3Common.sol";
 
-  event PullLiquidity(int24 tickLower, int24 tickUpper, uint128 shares, uint256 amount0, uint256 amount1);
+interface IKrystalVaultV3 is IKrystalVaultV3Common {
+  struct VaultState {
+    IUniswapV3Pool pool;
+    INonfungiblePositionManager nfpm;
+    IERC20 token0;
+    IERC20 token1;
+    uint256 currentTokenId;
+    int24 currentTickLower;
+    int24 currentTickUpper;
+    int24 tickSpacing;
+  }
+
+  struct VaultConfig {
+    bool mintCalled;
+    uint8 feeBasis;
+    uint256 maxTotalSupply;
+    address feeRecipient;
+  }
+
+  event Deposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
+
+  event PullLiquidity(uint128 shares, uint256 amount0, uint256 amount1);
 
   event Withdraw(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
 
@@ -32,47 +53,32 @@ interface IKrystalVaultV3 {
 
   event SetFee(uint8 newFee);
 
-  event ToggleDirectDeposit(bool directDeposit);
-
-  function deposit(
-    uint256 deposit0,
-    uint256 deposit1,
-    address to,
-    address from,
-    uint256[2] memory inMin
-  ) external returns (uint256 shares);
+  function deposit(INonfungiblePositionManager.MintParams memory params) external returns (uint256 shares);
 
   function pullLiquidity(
-    int24 tickLower,
-    int24 tickUpper,
     uint128 shares,
-    uint256[2] memory amountMin
+    uint256 amount0Min,
+    uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);
 
   function withdraw(
     uint256 shares,
     address to,
     address from,
-    uint256[2] memory minAmounts
+    uint256 amount0Min,
+    uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);
 
   function rebalance(
     int24 _baseLower,
     int24 _baseUpper,
-    address _feeRecipient,
-    uint256[2] memory inMin,
-    uint256[2] memory outMin
+    uint256 decreasedAmount0Min,
+    uint256 decreasedAmount1Min,
+    uint256 amount0Min,
+    uint256 amount1Min
   ) external;
 
-  function compound(uint256[2] memory inMin) external;
-
-  function addLiquidity(
-    int24 tickLower,
-    int24 tickUpper,
-    uint256 amount0,
-    uint256 amount1,
-    uint256[2] memory inMin
-  ) external;
+  function compound(uint256 amount0Min, uint256 amount1Min) external;
 
   function getTotalAmounts() external view returns (uint256 total0, uint256 total1);
 
@@ -81,14 +87,4 @@ interface IKrystalVaultV3 {
   function currentTick() external view returns (int24 tick);
 
   function setFee(uint8 newFee) external;
-
-  function token0() external view returns (IERC20);
-
-  function token1() external view returns (IERC20);
-
-  function baseLower() external view returns (int24);
-
-  function baseUpper() external view returns (int24);
-
-  function pool() external view returns (IUniswapV3Pool);
 }

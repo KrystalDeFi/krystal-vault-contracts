@@ -2,6 +2,7 @@
 pragma solidity ^0.8.28;
 
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
+import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
@@ -17,9 +18,9 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
 
   address[] public allVaults;
 
-  constructor(address _uniswapV3Factory) Ownable(_msgSender()) {
-    require(_uniswapV3Factory != address(0), "uniswapV3Factory should be non-zero");
-    uniswapV3Factory = IUniswapV3Factory(_uniswapV3Factory);
+  constructor(address uniswapV3FactoryAddress) Ownable(_msgSender()) {
+    require(uniswapV3FactoryAddress != address(0), ZeroAddress());
+    uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
   }
 
   /// @notice Get the number of KrystalVaultV3 created
@@ -29,48 +30,41 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
   }
 
   /// @notice Create a KrystalVaultV3
-  /// @param tokenA Address of token0
-  /// @param tokenB Address of token1
-  /// @param fee The desired fee for the KrystalVaultV3
+  /// @param nfpm Address of INonfungiblePositionManager
+  /// @param params MintParams of INonfungiblePositionManager
   /// @param name Name of the KrystalVaultV3
   /// @param symbol Symbol of the KrystalVaultV3
   /// @return krystalVaultV3 Address of KrystalVaultV3 created
   function createVault(
-    address tokenA,
-    address tokenB,
-    uint24 fee,
+    address nfpm,
+    INonfungiblePositionManager.MintParams memory params,
     string memory name,
     string memory symbol
   ) external override returns (address krystalVaultV3) {
-    require(tokenA != tokenB, "SF: IDENTICAL_ADDRESSES");
+    require(params.token0 != params.token1, IdenticalAddresses());
 
-    (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+    (address token0, address token1) = params.token0 < params.token1
+      ? (params.token0, params.token1)
+      : (params.token1, params.token0);
 
-    require(token0 != address(0), "SF: ZERO_ADDRESS");
-    require(token1 != address(0), "SF: ZERO_ADDRESS");
+    require(token0 != address(0), ZeroAddress());
+    require(token1 != address(0), ZeroAddress());
 
-    int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(fee);
+    int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(params.fee);
 
-    require(tickSpacing != 0, "SF: INCORRECT_FEE");
+    require(tickSpacing != 0, InvalidFee());
 
-    address pool = uniswapV3Factory.getPool(token0, token1, fee);
+    address pool = uniswapV3Factory.getPool(token0, token1, params.fee);
     if (pool == address(0)) {
-      pool = uniswapV3Factory.createPool(token0, token1, fee);
+      pool = uniswapV3Factory.createPool(token0, token1, params.fee);
     }
 
-    krystalVaultV3 = address(
-      new KrystalVaultV3{ salt: keccak256(abi.encodePacked(token0, token1, fee, tickSpacing)) }(
-        pool,
-        _msgSender(),
-        name,
-        symbol
-      )
-    );
+    krystalVaultV3 = address(new KrystalVaultV3(nfpm, pool, _msgSender(), params, name, symbol));
 
-    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, token0, token1, fee));
+    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, nfpm, params));
     allVaults.push(krystalVaultV3);
 
-    emit VaultCreated(_msgSender(), krystalVaultV3, token0, token1, fee, allVaults.length);
+    emit VaultCreated(_msgSender(), krystalVaultV3, nfpm, params, allVaults.length);
 
     return krystalVaultV3;
   }

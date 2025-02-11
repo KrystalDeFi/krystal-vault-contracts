@@ -1,5 +1,55 @@
 [
   {
+    "inputs": [],
+    "name": "ExceededSupply",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "IdenticalAddresses",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidAmount",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPriceRange",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSender",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidShares",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAddress",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ZeroAmount",
+    "type": "error"
+  },
+  {
     "anonymous": false,
     "inputs": [
       {
@@ -67,13 +117,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "to",
+        "name": "shareholder",
         "type": "address"
       },
       {
@@ -126,18 +170,6 @@
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickLower",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickUpper",
-        "type": "int24"
-      },
       {
         "indexed": false,
         "internalType": "uint128",
@@ -233,19 +265,6 @@
     "anonymous": false,
     "inputs": [
       {
-        "indexed": false,
-        "internalType": "bool",
-        "name": "directDeposit",
-        "type": "bool"
-      }
-    ],
-    "name": "ToggleDirectDeposit",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
         "indexed": true,
         "internalType": "address",
         "name": "sender",
@@ -282,68 +301,14 @@
   {
     "inputs": [
       {
-        "internalType": "int24",
-        "name": "tickLower",
-        "type": "int24"
-      },
-      {
-        "internalType": "int24",
-        "name": "tickUpper",
-        "type": "int24"
-      },
-      {
         "internalType": "uint256",
-        "name": "amount0",
+        "name": "amount0Min",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "amount1",
+        "name": "amount1Min",
         "type": "uint256"
-      },
-      {
-        "internalType": "uint256[2]",
-        "name": "inMin",
-        "type": "uint256[2]"
-      }
-    ],
-    "name": "addLiquidity",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "baseLower",
-    "outputs": [
-      {
-        "internalType": "int24",
-        "name": "",
-        "type": "int24"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "baseUpper",
-    "outputs": [
-      {
-        "internalType": "int24",
-        "name": "",
-        "type": "int24"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256[2]",
-        "name": "inMin",
-        "type": "uint256[2]"
       }
     ],
     "name": "compound",
@@ -367,29 +332,66 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "deposit0",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "deposit1",
-        "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "to",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "from",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256[2]",
-        "name": "inMin",
-        "type": "uint256[2]"
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token0",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "token1",
+            "type": "address"
+          },
+          {
+            "internalType": "uint24",
+            "name": "fee",
+            "type": "uint24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount0Desired",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount1Desired",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount0Min",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount1Min",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "recipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "deadline",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct INonfungiblePositionManager.MintParams",
+        "name": "params",
+        "type": "tuple"
       }
     ],
     "name": "deposit",
@@ -445,39 +447,21 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "pool",
-    "outputs": [
-      {
-        "internalType": "contract IUniswapV3Pool",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
-      {
-        "internalType": "int24",
-        "name": "tickLower",
-        "type": "int24"
-      },
-      {
-        "internalType": "int24",
-        "name": "tickUpper",
-        "type": "int24"
-      },
       {
         "internalType": "uint128",
         "name": "shares",
         "type": "uint128"
       },
       {
-        "internalType": "uint256[2]",
-        "name": "amountMin",
-        "type": "uint256[2]"
+        "internalType": "uint256",
+        "name": "amount0Min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount1Min",
+        "type": "uint256"
       }
     ],
     "name": "pullLiquidity",
@@ -509,19 +493,24 @@
         "type": "int24"
       },
       {
-        "internalType": "address",
-        "name": "_feeRecipient",
-        "type": "address"
+        "internalType": "uint256",
+        "name": "decreasedAmount0Min",
+        "type": "uint256"
       },
       {
-        "internalType": "uint256[2]",
-        "name": "inMin",
-        "type": "uint256[2]"
+        "internalType": "uint256",
+        "name": "decreasedAmount1Min",
+        "type": "uint256"
       },
       {
-        "internalType": "uint256[2]",
-        "name": "outMin",
-        "type": "uint256[2]"
+        "internalType": "uint256",
+        "name": "amount0Min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount1Min",
+        "type": "uint256"
       }
     ],
     "name": "rebalance",
@@ -543,32 +532,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "token0",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "token1",
-    "outputs": [
-      {
-        "internalType": "contract IERC20",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -586,9 +549,14 @@
         "type": "address"
       },
       {
-        "internalType": "uint256[2]",
-        "name": "minAmounts",
-        "type": "uint256[2]"
+        "internalType": "uint256",
+        "name": "amount0Min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount1Min",
+        "type": "uint256"
       }
     ],
     "name": "withdraw",
