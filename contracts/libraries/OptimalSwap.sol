@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity >=0.8.8;
+pragma solidity >=0.8.28;
 
 import "@aperture_finance/uni-v3-lib/src/SwapMath.sol";
 import "@aperture_finance/uni-v3-lib/src/TickBitmap.sol";
@@ -332,7 +332,7 @@ library OptimalSwap {
       uint256 liquidity;
       uint256 sqrtRatioUpperX96;
       uint256 feePips;
-      uint256 FEE_COMPLEMENT;
+      uint256 feeComplement;
       assembly ("memory-safe") {
         // liquidity = state.liquidity
         liquidity := mload(state)
@@ -342,8 +342,8 @@ library OptimalSwap {
         sqrtRatioUpperX96 := mload(add(state, 0xc0))
         // feePips = state.feePips
         feePips := mload(add(state, 0xe0))
-        // FEE_COMPLEMENT = MAX_FEE_PIPS - feePips
-        FEE_COMPLEMENT := sub(MAX_FEE_PIPS, feePips)
+        // feeComplement = MAX_FEE_PIPS - feePips
+        feeComplement := sub(MAX_FEE_PIPS, feePips)
       }
       {
         uint256 a0;
@@ -352,7 +352,7 @@ library OptimalSwap {
           let amount0Desired := mload(add(state, 0x60))
           let liquidityX96 := shl(96, liquidity)
           // a = amount0Desired + liquidity / ((1 - f) * sqrtPrice) - liquidity / sqrtRatioUpper
-          a0 := add(amount0Desired, div(mul(MAX_FEE_PIPS, liquidityX96), mul(FEE_COMPLEMENT, sqrtPriceX96)))
+          a0 := add(amount0Desired, div(mul(MAX_FEE_PIPS, liquidityX96), mul(feeComplement, sqrtPriceX96)))
           a := sub(a0, div(liquidityX96, sqrtRatioUpperX96))
           // `a` is always positive and greater than `amount0Desired`.
           if iszero(gt(a, amount0Desired)) {
@@ -363,7 +363,7 @@ library OptimalSwap {
         }
         b = a0.mulDivQ96(state.sqrtRatioLowerX96);
         assembly {
-          b := add(div(mul(feePips, liquidity), FEE_COMPLEMENT), b)
+          b := add(div(mul(feePips, liquidity), feeComplement), b)
         }
       }
       {
@@ -373,7 +373,7 @@ library OptimalSwap {
           // c0 = amount1Desired + liquidity * sqrtPrice
           c0 := add(mload(add(state, 0x80)), c0)
         }
-        c = c0 - liquidity.mulDivQ96((MAX_FEE_PIPS * state.sqrtRatioLowerX96) / FEE_COMPLEMENT);
+        c = c0 - liquidity.mulDivQ96((MAX_FEE_PIPS * state.sqrtRatioLowerX96) / feeComplement);
         b -= c0.mulDiv(FixedPoint96.Q96, sqrtRatioUpperX96);
       }
       assembly {
@@ -418,7 +418,7 @@ library OptimalSwap {
       uint256 liquidity;
       uint256 sqrtRatioUpperX96;
       uint256 feePips;
-      uint256 FEE_COMPLEMENT;
+      uint256 feeComplement;
       assembly ("memory-safe") {
         // liquidity = state.liquidity
         liquidity := mload(state)
@@ -428,8 +428,8 @@ library OptimalSwap {
         sqrtRatioUpperX96 := mload(add(state, 0xc0))
         // feePips = state.feePips
         feePips := mload(add(state, 0xe0))
-        // FEE_COMPLEMENT = MAX_FEE_PIPS - feePips
-        FEE_COMPLEMENT := sub(MAX_FEE_PIPS, feePips)
+        // feeComplement = MAX_FEE_PIPS - feePips
+        feeComplement := sub(MAX_FEE_PIPS, feePips)
       }
       {
         // a = state.amount0Desired + liquidity / sqrtPrice - liquidity / ((1 - f) * sqrtRatioUpper)
@@ -438,16 +438,16 @@ library OptimalSwap {
           let liquidityX96 := shl(96, liquidity)
           // a0 = state.amount0Desired + liquidity / sqrtPrice
           a0 := add(mload(add(state, 0x60)), div(liquidityX96, sqrtPriceX96))
-          a := sub(a0, div(mul(MAX_FEE_PIPS, liquidityX96), mul(FEE_COMPLEMENT, sqrtRatioUpperX96)))
+          a := sub(a0, div(mul(MAX_FEE_PIPS, liquidityX96), mul(feeComplement, sqrtRatioUpperX96)))
         }
         b = a0.mulDivQ96(state.sqrtRatioLowerX96);
         assembly {
-          b := sub(b, div(mul(feePips, liquidity), FEE_COMPLEMENT))
+          b := sub(b, div(mul(feePips, liquidity), feeComplement))
         }
       }
       {
         // c = amount1Desired + liquidity * sqrtPrice / (1 - f) - liquidity * sqrtRatioLower
-        uint256 c0 = liquidity.mulDivQ96((MAX_FEE_PIPS * sqrtPriceX96) / FEE_COMPLEMENT);
+        uint256 c0 = liquidity.mulDivQ96((MAX_FEE_PIPS * sqrtPriceX96) / feeComplement);
         uint256 amount1Desired;
         assembly ("memory-safe") {
           // amount1Desired = state.amount1Desired

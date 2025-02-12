@@ -12,6 +12,8 @@ interface IKrystalVaultV3Common {
 
   error ExceededSupply();
 
+  error Unauthorized();
+
   error InvalidFee();
 
   error InvalidAddress();

@@ -10,8 +10,7 @@ dotenv.config({
 });
 
 const { PRIVATE_KEY, BASESCAN_APIKEY } = process.env;
-const customNetworkConfig =
-  process.env.CHAIN && process.env.CHAIN ? `${process.env.CHAIN}_${process.env.NETWORK}` : '';
+const customNetworkConfig = process.env.CHAIN && process.env.CHAIN ? `${process.env.CHAIN}_${process.env.NETWORK}` : "";
 
 console.log(
   `--ENVS:\n--CHAIN=${process.env.CHAIN}, NETWORK=${process.env.NETWORK}, customConfig=${customNetworkConfig}`,
@@ -60,6 +59,10 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       allowUnlimitedContractSize: false,
+      forking: {
+        enabled: true,
+        url: `https://mainnet.base.org`,
+      },
       accounts: {
         count: 10,
       },

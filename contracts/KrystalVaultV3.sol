@@ -392,6 +392,17 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     );
   }
 
+  /// @notice Callback function required by Uniswap V3 to finalize swaps
+  function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external override {
+    require(_msgSender() == address(state.pool), Unauthorized());
+
+    if (amount0Delta > 0) {
+      IERC20(state.token0).transfer(_msgSender(), uint256(amount0Delta));
+    } else if (amount1Delta > 0) {
+      IERC20(state.token1).transfer(_msgSender(), uint256(amount1Delta));
+    }
+  }
+
   /// @notice Collect fees
   function _collectFees() internal returns (uint128 liquidity) {
     (liquidity, , ) = _position();
@@ -600,23 +611,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     emit SetFee(config.feeBasisPoints);
   }
 
-  function _uint128Safe(uint256 x) internal pure returns (uint128) {
-    assert(x <= type(uint128).max);
-
-    return uint128(x);
-  }
-
-  /// @notice Callback function required by Uniswap V3 to finalize swaps
-  function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external override {
-    require(_msgSender() == address(state.pool), "Unauthorized callback caller");
-
-    if (amount0Delta > 0) {
-      IERC20(state.token0).transfer(msg.sender, uint256(amount0Delta));
-    } else if (amount1Delta > 0) {
-      IERC20(state.token1).transfer(msg.sender, uint256(amount1Delta));
-    }
-  }
-
   /// @dev Make a direct `exactIn` pool swap
   /// @param pool The address of the pool
   /// @param amountIn The amount of token to be swapped
@@ -677,5 +671,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
         balance1 := add(balance1, xor(minusAmountIn, diff))
       }
     }
+  }
+
+  function _uint128Safe(uint256 x) internal pure returns (uint128) {
+    assert(x <= type(uint128).max);
+
+    return uint128(x);
   }
 }
