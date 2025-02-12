@@ -20,14 +20,20 @@ import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
 import "./interfaces/IKrystalVaultV3.sol";
+import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
+import { TernaryLib } from "@aperture_finance/uni-v3-lib/src/TernaryLib.sol";
 
 /// @title KrystalVaultV3
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
 contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV3 {
+  uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
+  uint160 internal constant XOR_SQRT_RATIO = (4295128739 + 1) ^ (1461446703485210103287273052203988822378723970342 - 1);
+
   using SafeERC20 for IERC20;
   using Math for uint256;
   using SignedMath for int256;
+  using TernaryLib for bool;
 
   address public vaultFactory;
 
@@ -597,5 +603,88 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     assert(x <= type(uint128).max);
 
     return uint128(x);
+  }
+
+  /// @dev Make a direct `exactIn` pool swap
+  /// @param poolKey The pool key containing the token addresses and fee tier
+  /// @param pool The address of the pool
+  /// @param amountIn The amount of token to be swapped
+  /// @param zeroForOne The direction of the swap, true for token0 to token1, false for token1 to token0
+  /// @return amountOut The amount of token received after swap
+  function _poolSwap(
+    PoolAddress.PoolKey memory poolKey,
+    address pool,
+    uint256 amountIn,
+    bool zeroForOne
+  ) internal returns (uint256 amountOut) {
+    if (amountIn != 0) {
+      uint256 wordBeforePoolKey;
+      bytes memory data;
+      assembly ("memory-safe") {
+        // Equivalent to `data = abi.encode(poolKey)`
+        data := sub(poolKey, 0x20)
+        wordBeforePoolKey := mload(data)
+        mstore(data, 0x60)
+      }
+      uint160 sqrtPriceLimitX96;
+      // Equivalent to `sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1`
+      assembly {
+        sqrtPriceLimitX96 := xor(MAX_SQRT_RATIO_LESS_ONE, mul(XOR_SQRT_RATIO, zeroForOne))
+      }
+      (int256 amount0Delta, int256 amount1Delta) = V3PoolCallee.wrap(pool).swap(
+        address(this),
+        zeroForOne,
+        int256(amountIn),
+        sqrtPriceLimitX96,
+        data
+      );
+      unchecked {
+        amountOut = 0 - zeroForOne.ternary(uint256(amount1Delta), uint256(amount0Delta));
+      }
+      assembly ("memory-safe") {
+        // Restore the memory word before `poolKey`
+        mstore(data, wordBeforePoolKey)
+      }
+    }
+  }
+
+  function _optimalSwap(int24 tickLower, int24 tickUpper) internal {
+    // swap tokens to the optimal ratio to add liquidity in the same pool
+    IERC20 token0 = state.token0;
+    IERC20 token1 = state.token1;
+    address pool = address(state.pool);
+    uint24 fee = state.pool.fee();
+    unchecked {
+      uint256 balance0 = token0.balanceOf(address(this));
+      uint256 balance1 = token1.balanceOf(address(this));
+      uint256 amountIn;
+      uint256 amountOut;
+      bool zeroForOne;
+      {
+        PoolAddress.PoolKey memory poolKey = PoolAddress.PoolKey({
+          token0: address(token0),
+          token1: address(token1),
+          fee: fee
+        });
+        uint256 amount0Desired = balance0;
+        uint256 amount1Desired = balance1;
+        (amountIn, , zeroForOne, ) = OptimalSwap.getOptimalSwap(
+          V3PoolCallee.wrap(pool),
+          tickLower,
+          tickUpper,
+          amount0Desired,
+          amount1Desired
+        );
+        amountOut = _poolSwap(poolKey, pool, amountIn, zeroForOne);
+      }
+      // balance0 = balance0 + zeroForOne ? - amountIn : amountOut
+      // balance1 = balance1 + zeroForOne ? amountOut : - amountIn
+      assembly {
+        let minusAmountIn := sub(0, amountIn)
+        let diff := mul(xor(amountOut, minusAmountIn), zeroForOne)
+        balance0 := add(balance0, xor(amountOut, diff))
+        balance1 := add(balance1, xor(minusAmountIn, diff))
+      }
+    }
   }
 }

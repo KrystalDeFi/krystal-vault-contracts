@@ -11,9 +11,11 @@
     "verify": "hardhat verify --network",
     "prettier:check": "prettier --check \"**/*.{json,md,yml}\"",
     "prettier:write": "prettier --write \"**/*.{json,md,yml}\"",
-    "lint:sol": "solhint \"{script,src,test}/**/*.sol\""
+    "lint:sol": "solhint \"{script,src,test}/**/*.sol\"",
+    "prettier:write-solidity": "prettier --write --plugin=prettier-plugin-solidity \"**/*.sol\""
   },
   "dependencies": {
+    "@aperture_finance/uni-v3-lib": "^3.0.3",
     "@ethersproject/abstract-signer": "^5.7.0",
     "@ethersproject/bignumber": "^5.7.0",
     "@ethersproject/networks": "^5.7.1",
