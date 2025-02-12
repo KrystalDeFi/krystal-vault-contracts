@@ -53,7 +53,16 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
 
   event SetFee(uint8 newFee);
 
-  function deposit(INonfungiblePositionManager.MintParams memory params) external returns (uint256 shares);
+  function mintPosition(
+    int24 tickLower,
+    int24 tickUpper,
+    uint256 amount0Desired,
+    uint256 amount1Desired,
+    uint256 amount0Min,
+    uint256 amount1Min
+  ) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
+
+  function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external returns (uint256 shares);
 
   function pullLiquidity(
     uint128 shares,
@@ -64,7 +73,6 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   function withdraw(
     uint256 shares,
     address to,
-    address from,
     uint256 amount0Min,
     uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);

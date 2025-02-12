@@ -23,4 +23,10 @@ interface IKrystalVaultV3Common {
   error InvalidPriceRange();
 
   error InvalidAmount();
+
+  error InvalidOwner();
+
+  error InvalidVaultFactory();
+
+  error InvalidPosition();
 }

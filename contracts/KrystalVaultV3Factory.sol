@@ -4,6 +4,8 @@ pragma solidity ^0.8.28;
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
 import { KrystalVaultV3 } from "./KrystalVaultV3.sol";
@@ -12,6 +14,7 @@ import "./interfaces/IKrystalVaultV3Factory.sol";
 
 /// @title KrystalVaultV3Factory
 contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
+  using SafeERC20 for IERC20;
   IUniswapV3Factory public uniswapV3Factory;
 
   mapping(address => Vault[]) public vaultsByAddress;
@@ -59,7 +62,20 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
       pool = uniswapV3Factory.createPool(token0, token1, params.fee);
     }
 
-    krystalVaultV3 = address(new KrystalVaultV3(nfpm, pool, _msgSender(), params, name, symbol));
+    KrystalVaultV3 vault = new KrystalVaultV3(nfpm, pool, _msgSender(), name, symbol);
+    krystalVaultV3 = address(vault);
+
+    IERC20(token0).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount0Desired);
+    IERC20(token1).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount1Desired);
+
+    vault.mintPosition(
+      params.tickLower,
+      params.tickUpper,
+      params.amount0Desired,
+      params.amount1Desired,
+      params.amount0Min,
+      params.amount1Min
+    );
 
     vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, nfpm, params));
     allVaults.push(krystalVaultV3);

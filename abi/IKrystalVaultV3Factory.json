@@ -26,6 +26,16 @@
   },
   {
     "inputs": [],
+    "name": "InvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPosition",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidPriceRange",
     "type": "error"
   },
@@ -37,6 +47,11 @@
   {
     "inputs": [],
     "name": "InvalidShares",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidVaultFactory",
     "type": "error"
   },
   {

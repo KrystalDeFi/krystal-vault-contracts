@@ -37,6 +37,16 @@
   },
   {
     "inputs": [],
+    "name": "InvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidPosition",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidPriceRange",
     "type": "error"
   },
@@ -48,6 +58,11 @@
   {
     "inputs": [],
     "name": "InvalidShares",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidVaultFactory",
     "type": "error"
   },
   {
@@ -70,6 +85,17 @@
       }
     ],
     "name": "OwnableUnauthorizedAccount",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "token",
+        "type": "address"
+      }
+    ],
+    "name": "SafeERC20FailedOperation",
     "type": "error"
   },
   {
