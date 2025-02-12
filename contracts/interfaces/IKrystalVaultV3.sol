@@ -23,7 +23,7 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
 
   struct VaultConfig {
     bool mintCalled;
-    uint8 feeBasis;
+    uint8 feeBasisPoints;
     uint256 maxTotalSupply;
     address feeRecipient;
   }
@@ -33,6 +33,8 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   event PullLiquidity(uint128 shares, uint256 amount0, uint256 amount1);
 
   event Withdraw(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
+
+  event Exit(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
 
   event Rebalance(
     int24 tick,
@@ -62,7 +64,13 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     uint256 amount1Min
   ) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
 
-  function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external returns (uint256 shares);
+  function deposit(
+    uint256 amount0Desired,
+    uint256 amount1Desired,
+    uint256 amount0Min,
+    uint256 amount1Min,
+    address to
+  ) external returns (uint256 shares);
 
   function pullLiquidity(
     uint128 shares,
@@ -76,6 +84,8 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     uint256 amount0Min,
     uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);
+
+  function exit(uint256 shares, address to, uint256 amount0Min, uint256 amount1Min) external;
 
   function rebalance(
     int24 _baseLower,

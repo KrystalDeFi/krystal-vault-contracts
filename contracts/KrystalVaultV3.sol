@@ -29,14 +29,10 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   using Math for uint256;
   using SignedMath for int256;
 
+  address public vaultFactory;
+
   VaultState public state;
   VaultConfig public config;
-  address public vaultFactory; 
-
-  modifier onlyVaultFactory {
-    require(vaultFactory == _msgSender(), InvalidVaultFactory());
-    _;
-  }
 
   /// @param _nfpm Uniswap V3 nonfungible position manager address
   /// @param _pool Uniswap V3 pool address
@@ -54,19 +50,28 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     require(_pool != address(0), ZeroAddress());
     require(_owner != address(0), ZeroAddress());
 
-    config = VaultConfig({ mintCalled: false, feeBasis: 100, maxTotalSupply: 0, feeRecipient: _owner });
+    vaultFactory = _msgSender();
+
+    // feeBasisPoints is in basis points (1% = 100 basis points)
+    config = VaultConfig({ mintCalled: false, feeBasisPoints: 100, maxTotalSupply: 0, feeRecipient: _owner });
+
+    IUniswapV3Pool pool = IUniswapV3Pool(_pool);
 
     state = VaultState({
       pool: IUniswapV3Pool(_pool),
       nfpm: INonfungiblePositionManager(_nfpm),
-      token0: IERC20(IUniswapV3Pool(_pool).token0()),
-      token1: IERC20(IUniswapV3Pool(_pool).token1()),
+      token0: IERC20(pool.token0()),
+      token1: IERC20(pool.token1()),
       currentTokenId: 0,
       currentTickLower: 0,
       currentTickUpper: 0,
-      tickSpacing: IUniswapV3Pool(_pool).tickSpacing()
+      tickSpacing: pool.tickSpacing()
     });
-    vaultFactory = _msgSender();
+  }
+
+  modifier onlyVaultFactory() {
+    require(vaultFactory == _msgSender(), InvalidVaultFactory());
+    _;
   }
 
   function mintPosition(
@@ -111,11 +116,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   }
 
   /// @notice Deposit tokens
-  // @param amount0Desired Desired amount of token0 to deposit
-  // @param amount1Desired Desired amount of token1 to deposit
-  // @param amount0Min Minimum amount of token0 to deposit
-  // @param amount1Min Minimum amount of token1 to deposit
-  // @param to Address to which liquidity tokens are sent
+  /// @param amount0Desired Desired amount of token0 to deposit
+  /// @param amount1Desired Desired amount of token1 to deposit
+  /// @param amount0Min Minimum amount of token0 to deposit
+  /// @param amount1Min Minimum amount of token1 to deposit
+  /// @param to Address to which liquidity tokens are sent
   /// @return shares Quantity of liquidity tokens minted as a result of deposit
   function deposit(
     uint256 amount0Desired,
@@ -126,6 +131,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   ) external override nonReentrant returns (uint256 shares) {
     require(amount0Desired > 0 || amount1Desired > 0, ZeroAmount());
     require(state.currentTokenId != 0, InvalidPosition());
+
     if (to == address(0)) {
       to = _msgSender();
     }
@@ -156,14 +162,15 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       state.token1.safeTransferFrom(_msgSender(), address(this), amount1Desired);
     }
 
-    INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager.IncreaseLiquidityParams({
-      tokenId: state.currentTokenId,
-      amount0Desired: state.token0.balanceOf(address(this)),
-      amount1Desired: state.token1.balanceOf(address(this)),
-      amount0Min: amount0Min,
-      amount1Min: amount1Min,
-      deadline: block.timestamp
-    });
+    INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager
+      .IncreaseLiquidityParams({
+        tokenId: state.currentTokenId,
+        amount0Desired: state.token0.balanceOf(address(this)),
+        amount1Desired: state.token1.balanceOf(address(this)),
+        amount0Min: amount0Min,
+        amount1Min: amount1Min,
+        deadline: block.timestamp
+      });
     (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
 
     (, uint256 totalAfterShares) = total.tryAdd(shares);
@@ -246,6 +253,46 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     emit Withdraw(_msgSender(), to, shares, amount0, amount1);
 
     return (amount0, amount1);
+  }
+
+  /// @notice Exit the position and redeem all tokens to balance
+  /// @param to Address to which redeemed pool assets are sent
+  /// @param shares Number of liquidity tokens to redeem as pool assets
+  /// @param amount0Min Minimum amount of token0 to receive
+  /// @param amount1Min Minimum amount of token1 to receive
+  function exit(
+    uint256 shares,
+    address to,
+    uint256 amount0Min,
+    uint256 amount1Min
+  ) external override onlyOwner nonReentrant {
+    require(shares > 0, InvalidShares());
+    require(to != address(0), ZeroAddress());
+
+    /// update fees
+    _collectFees();
+
+    (uint128 liquidity, , ) = _position();
+
+    /// Withdraw liquidity from Uniswap pool
+    _decreaseLiquidityAndCollectFees(liquidity, address(this), true, amount0Min, amount1Min);
+
+    // Push tokens proportional to unused balances
+    (, uint256 totalAmount0) = state.token0.balanceOf(address(this)).tryMul(shares);
+    (, totalAmount0) = totalAmount0.tryDiv(totalSupply());
+    (, uint256 totalAmount1) = state.token1.balanceOf(address(this)).tryMul(shares);
+    (, totalAmount1) = totalAmount1.tryDiv(totalSupply());
+
+    if (totalAmount0 > 0) state.token0.safeTransfer(to, totalAmount0);
+    if (totalAmount1 > 0) state.token1.safeTransfer(to, totalAmount1);
+
+    _burn(_msgSender(), shares);
+
+    state.currentTokenId = 0;
+    state.currentTickLower = 0;
+    state.currentTickUpper = 0;
+
+    emit Exit(_msgSender(), to, shares, totalAmount0, totalAmount1);
   }
 
   /// @notice Rebalance position to new range
@@ -352,11 +399,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
         })
       );
 
-      emit FeeCollected(config.feeBasis, owed0, owed1);
+      emit FeeCollected(config.feeBasisPoints, owed0, owed1);
 
-      (, uint256 feeAmount0) = owed0.tryMul(config.feeBasis);
+      (, uint256 feeAmount0) = owed0.tryMul(config.feeBasisPoints);
       (, feeAmount0) = feeAmount0.tryDiv(10000);
-      (, uint256 feeAmount1) = owed1.tryMul(config.feeBasis);
+      (, uint256 feeAmount1) = owed1.tryMul(config.feeBasisPoints);
       (, feeAmount1) = feeAmount1.tryDiv(10000);
 
       if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
@@ -538,11 +585,12 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     return tick;
   }
 
-  /// @notice set fee
-  function setFee(uint8 newFee) external override onlyOwner {
-    config.feeBasis = newFee;
+  /// @notice Set the fee basis points for the vault
+  /// @param newFeeBasisPoints The new fee basis points to be set
+  function setFee(uint8 newFeeBasisPoints) external override onlyOwner {
+    config.feeBasisPoints = newFeeBasisPoints;
 
-    emit SetFee(config.feeBasis);
+    emit SetFee(config.feeBasisPoints);
   }
 
   function _uint128Safe(uint256 x) internal pure returns (uint128) {
