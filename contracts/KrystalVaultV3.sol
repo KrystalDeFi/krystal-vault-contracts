@@ -176,32 +176,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     return shares;
   }
 
-  /// @notice Pull liquidity tokens from liquidity and receive the tokens
-  /// @param shares Number of liquidity tokens to pull from liquidity
-  /// @param amount0Min Minimum amount of token0 to receive
-  /// @param amount1Min Minimum amount of token1 to receive
-  /// @return amount0 amount of token0 received from base position
-  /// @return amount1 amount of token1 received from base position
-  function pullLiquidity(
-    uint128 shares,
-    uint256 amount0Min,
-    uint256 amount1Min
-  ) external override onlyOwner returns (uint256 amount0, uint256 amount1) {
-    _collectFees();
-
-    (amount0, amount1) = _decreaseLiquidityAndCollectFees(
-      _liquidityForShares(shares),
-      address(this),
-      false,
-      amount0Min,
-      amount1Min
-    );
-
-    emit PullLiquidity(shares, amount0, amount1);
-
-    return (amount0, amount1);
-  }
-
   /// @notice Withdraw liquidity tokens and receive the tokens
   /// @param shares Number of liquidity tokens to redeem as pool assets
   /// @param to Address to which redeemed pool assets are sent

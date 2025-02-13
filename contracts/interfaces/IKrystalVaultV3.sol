@@ -29,8 +29,6 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
 
   event Deposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
 
-  event PullLiquidity(uint128 shares, uint256 amount0, uint256 amount1);
-
   event Withdraw(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
 
   event Exit(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
@@ -70,12 +68,6 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     uint256 amount1Min,
     address to
   ) external returns (uint256 shares);
-
-  function pullLiquidity(
-    uint128 shares,
-    uint256 amount0Min,
-    uint256 amount1Min
-  ) external returns (uint256 amount0, uint256 amount1);
 
   function withdraw(
     uint256 shares,
