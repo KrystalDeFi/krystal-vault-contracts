@@ -84,7 +84,7 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);
 
-  function exit(uint256 shares, address to, uint256 amount0Min, uint256 amount1Min) external;
+  function exit(address to, uint256 amount0Min, uint256 amount1Min) external;
 
   function rebalance(
     int24 _baseLower,

@@ -249,15 +249,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
   /// @notice Exit the position and redeem all tokens to balance
   /// @param to Address to which redeemed pool assets are sent
-  /// @param shares Number of liquidity tokens to redeem as pool assets
   /// @param amount0Min Minimum amount of token0 to receive
   /// @param amount1Min Minimum amount of token1 to receive
-  function exit(
-    uint256 shares,
-    address to,
-    uint256 amount0Min,
-    uint256 amount1Min
-  ) external override onlyOwner nonReentrant {
+  function exit(address to, uint256 amount0Min, uint256 amount1Min) external override onlyOwner nonReentrant {
+    uint256 shares = IERC20(address(this)).balanceOf(_msgSender());
+
     require(shares > 0, InvalidShares());
     require(to != address(0), ZeroAddress());
 
