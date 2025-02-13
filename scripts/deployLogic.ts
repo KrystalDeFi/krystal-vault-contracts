@@ -1,8 +1,8 @@
 import { ethers, network, run } from "hardhat";
-import { NetworkConfig } from "./networkConfig";
+import { NetworkConfig } from "../configs/networkConfig";
 import { KrystalVaultV3Factory } from "../typechain-types";
 import { BaseContract } from "ethers";
-import { IConfig } from "./configUtils";
+import { IConfig } from "../configs/interfaces";
 import { sleep } from "./helpers";
 
 const networkConfig = NetworkConfig[network.name];

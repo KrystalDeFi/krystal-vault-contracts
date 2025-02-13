@@ -1,4 +1,4 @@
-import { IConfig } from "./configUtils";
+import { IConfig } from "./interfaces";
 import { BaseConfig } from "./config_base";
 
 const NetworkConfig: Record<string, IConfig> = {

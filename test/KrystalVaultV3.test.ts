@@ -1,25 +1,20 @@
-import { expect } from "chai";
-import { ethers, network } from "hardhat";
-import { Contract, keccak256, parseEther } from "ethers";
+import { ethers } from "hardhat";
+import { Contract, parseEther } from "ethers";
 import * as chai from "chai";
-
+import { expect } from "chai";
 import chaiAsPromised from "chai-as-promised";
-chai.use(chaiAsPromised);
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 import krystalVaultV3ABI from "../abi/KrystalVaultV3.json";
-import { INonfungiblePositionManager, KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
-import { blockNumber } from "../helpers/vm";
-import { BaseConfig } from "../scripts/config_base";
-import { getMaxTick, getMinTick, tickToPrice } from "../helpers/univ3";
+import { KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
 
-async function impersonateAccount(address: string): Promise<HardhatEthersSigner> {
-  const signer = await network.provider.request({
-    method: "hardhat_impersonateAccount",
-    params: [address],
-  });
-  return signer as HardhatEthersSigner;
-}
+import { getMaxTick, getMinTick } from "../helpers/univ3";
+import { blockNumber } from "../helpers/vm";
+import { TestConfig } from "../configs/testConfig";
+import { NetworkConfig } from "../configs/networkConfig";
+import { last } from "lodash";
+
+chai.use(chaiAsPromised);
 
 describe("KrystalVaultV3Factory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
@@ -27,12 +22,13 @@ describe("KrystalVaultV3Factory", function () {
   let vaultAddress: string;
   let token0: TestERC20;
   let token1: TestERC20;
-  let nfpmAddr = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
+  let nfpmAddr = TestConfig.base_mainnet.nfpm;
 
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    factory = await ethers.deployContract("KrystalVaultV3Factory", [BaseConfig.base_mainnet.uniswapV3Factory]);
+    factory = await ethers.deployContract("KrystalVaultV3Factory", [NetworkConfig.base_mainnet.uniswapV3Factory]);
+
     await factory.waitForDeployment();
     console.log("factory deployed at: ", await factory.getAddress());
 
@@ -45,30 +41,39 @@ describe("KrystalVaultV3Factory", function () {
     if (t1Addr < t0Addr) {
       [token0, token1] = [token1, token0];
     }
+
+    console.log("token0: ", await token0.getAddress());
+    console.log("token1: ", await token1.getAddress());
+
     await token0.transfer(await alice.getAddress(), parseEther("1000"));
     await token1.transfer(await alice.getAddress(), parseEther("1000"));
-    console.log("token0", await token0.getAddress());
-    console.log("token1", await token1.getAddress());
+
+    await token0.connect(alice).approve(nfpmAddr, parseEther("1000"));
+    await token1.connect(alice).approve(nfpmAddr, parseEther("1000"));
 
     const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
-    const poolAddr = await nfpm.createAndInitializePoolIfNecessary(
+    await nfpm.createAndInitializePoolIfNecessary(
       await token0.getAddress(),
       await token1.getAddress(),
       3000,
-      "79228162514264337593543950336",
+      "79228162514264337593543950336", // initial price = 1
     );
   });
 
-  it("Should create a new vault", async () => {
+  it("Should create a new vault and return correct vault count", async () => {
+    let vaultCount = await factory.allVaultsLength();
+    expect(vaultCount).to.equal(0);
+
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+
     const tx = await factory.connect(alice).createVault(
       nfpmAddr,
       {
         token0: await token0.getAddress(),
         token1: await token1.getAddress(),
         fee: 3000,
-        tickLower: getMinTick(-60),
+        tickLower: getMinTick(60),
         tickUpper: getMaxTick(60),
         amount0Desired: parseEther("1"),
         amount1Desired: parseEther("1"),
@@ -80,31 +85,13 @@ describe("KrystalVaultV3Factory", function () {
       "Vault Name",
       "VAULT",
     );
-    const receipt = await tx.wait();
-    vaultAddress = receipt?.logs?.[0].data || "";
-    expect(vaultAddress).to.be.properAddress;
-  });
 
-  it("Should return the correct number of vaults", async () => {
-    await factory.createVault(
-      "",
-      {
-        token0: "",
-        token1: "",
-        fee: "",
-        tickLower: "",
-        tickUpper: "",
-        amount0Desired: "",
-        amount1Desired: "",
-        amount0Min: "",
-        amount1Min: "",
-        recipient: "",
-        deadline: "",
-      },
-      "Vault Name",
-      "VAULT",
-    );
-    const vaultCount = await factory.allVaultsLength();
+    const receipt = await tx.wait();
+    // @ts-ignore
+    vaultAddress = last(receipt?.logs)?.args?.[1];
+    expect(vaultAddress).to.be.properAddress;
+
+    vaultCount = await factory.allVaultsLength();
     expect(vaultCount).to.equal(1);
   });
 });

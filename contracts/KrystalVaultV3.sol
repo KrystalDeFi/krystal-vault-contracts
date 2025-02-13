@@ -2,9 +2,6 @@
 
 pragma solidity ^0.8.28;
 
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SignedMath.sol";
-
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -14,15 +11,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
-import "./interfaces/IKrystalVaultV3.sol";
-import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
-import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
 import { TernaryLib } from "@aperture_finance/uni-v3-lib/src/TernaryLib.sol";
+
+import "./interfaces/IKrystalVaultV3.sol";
+import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
 
 /// @title KrystalVaultV3
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
@@ -32,8 +30,6 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   uint160 internal constant XOR_SQRT_RATIO = (4295128739 + 1) ^ (1461446703485210103287273052203988822378723970342 - 1);
 
   using SafeERC20 for IERC20;
-  using Math for uint256;
-  using SignedMath for int256;
   using TernaryLib for bool;
 
   address public vaultFactory;
@@ -94,10 +90,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
 
-    // shares = amount1Desired + (amount0Desired * priceX96 / Q96)
-    (, uint256 shares) = amount0Desired.tryMul(priceX96);
-    (, shares) = shares.tryDiv(FixedPoint96.Q96);
-    (, shares) = amount1Desired.tryAdd(shares);
+    uint256 shares = amount1Desired + ((amount0Desired * priceX96) / FixedPoint96.Q96);
 
     INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
       token0: address(state.token0),
@@ -152,15 +145,9 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     (uint256 total0, uint256 total1) = getTotalAmounts();
     uint256 total = totalSupply();
 
-    // shares = ((amount1Desired + (amount0Desired * priceX96 / Q96)) * total) / (total1 + total0 * priceX96 / Q96)
-    (, shares) = amount0Desired.tryMul(priceX96);
-    (, shares) = shares.tryDiv(FixedPoint96.Q96);
-    (, shares) = amount1Desired.tryAdd(shares);
-    (, uint256 pool0PricedInToken1) = total0.tryMul(priceX96);
-    (, pool0PricedInToken1) = pool0PricedInToken1.tryDiv(FixedPoint96.Q96);
-    (, pool0PricedInToken1) = pool0PricedInToken1.tryAdd(total1);
-    (, shares) = shares.tryMul(total);
-    (, shares) = shares.tryDiv(pool0PricedInToken1);
+    shares =
+      ((amount1Desired + ((amount0Desired * priceX96) / FixedPoint96.Q96)) * total) /
+      (total1 + (total0 * priceX96) / FixedPoint96.Q96);
 
     if (amount0Desired > 0) {
       state.token0.safeTransferFrom(_msgSender(), address(this), amount0Desired);
@@ -180,7 +167,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       });
     (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
 
-    (, uint256 totalAfterShares) = total.tryAdd(shares);
+    uint256 totalAfterShares = total + shares;
     require(config.maxTotalSupply == 0 || totalAfterShares <= config.maxTotalSupply, ExceededSupply());
 
     _mint(to, shares);
@@ -244,16 +231,14 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     );
 
     // Push tokens proportional to unused balances
-    (, uint256 unusedAmount0) = state.token0.balanceOf(address(this)).tryMul(shares);
-    (, unusedAmount0) = unusedAmount0.tryDiv(totalSupply());
-    (, uint256 unusedAmount1) = state.token1.balanceOf(address(this)).tryMul(shares);
-    (, unusedAmount1) = unusedAmount1.tryDiv(totalSupply());
+    uint256 unusedAmount0 = (state.token0.balanceOf(address(this)) * shares) / totalSupply();
+    uint256 unusedAmount1 = (state.token1.balanceOf(address(this)) * shares) / totalSupply();
 
     if (unusedAmount0 > 0) state.token0.safeTransfer(to, unusedAmount0);
     if (unusedAmount1 > 0) state.token1.safeTransfer(to, unusedAmount1);
 
-    (, amount0) = base0.tryAdd(unusedAmount0);
-    (, amount1) = base1.tryAdd(unusedAmount1);
+    amount0 = base0 + unusedAmount0;
+    amount1 = base1 + unusedAmount1;
 
     _burn(_msgSender(), shares);
 
@@ -285,10 +270,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     _decreaseLiquidityAndCollectFees(liquidity, address(this), true, amount0Min, amount1Min);
 
     // Push tokens proportional to unused balances
-    (, uint256 totalAmount0) = state.token0.balanceOf(address(this)).tryMul(shares);
-    (, totalAmount0) = totalAmount0.tryDiv(totalSupply());
-    (, uint256 totalAmount1) = state.token1.balanceOf(address(this)).tryMul(shares);
-    (, totalAmount1) = totalAmount1.tryDiv(totalSupply());
+    uint256 totalAmount0 = (state.token0.balanceOf(address(this)) * shares) / totalSupply();
+    uint256 totalAmount1 = (state.token1.balanceOf(address(this)) * shares) / totalSupply();
 
     if (totalAmount0 > 0) state.token0.safeTransfer(to, totalAmount0);
     if (totalAmount1 > 0) state.token1.safeTransfer(to, totalAmount1);
@@ -419,10 +402,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
       emit FeeCollected(config.feeBasisPoints, owed0, owed1);
 
-      (, uint256 feeAmount0) = owed0.tryMul(config.feeBasisPoints);
-      (, feeAmount0) = feeAmount0.tryDiv(10000);
-      (, uint256 feeAmount1) = owed1.tryMul(config.feeBasisPoints);
-      (, feeAmount1) = feeAmount1.tryDiv(10000);
+      uint256 feeAmount0 = (owed0 * config.feeBasisPoints) / 10000;
+      uint256 feeAmount1 = (owed1 * config.feeBasisPoints) / 10000;
 
       if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
         state.token0.safeTransfer(config.feeRecipient, feeAmount0);
@@ -445,7 +426,11 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     config.mintCalled = true;
     params.recipient = address(this);
 
+    state.token0.approve(address(state.nfpm), type(uint256).max);
+    state.token1.approve(address(state.nfpm), type(uint256).max);
+
     (tokenId, liquidity, amount0, amount1) = state.nfpm.mint(params);
+
     state.currentTokenId = tokenId;
 
     return (tokenId, liquidity, amount0, amount1);
@@ -510,8 +495,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   /// @return The amount of liquidity token for shares
   function _liquidityForShares(uint256 shares) internal view returns (uint128) {
     (uint128 position, , ) = _position();
-    (, uint256 totalShares) = uint256(position).tryMul(shares);
-    (, totalShares) = totalShares.tryDiv(totalSupply());
+    uint256 totalShares = (position * shares) / totalSupply();
     return _uint128Safe(totalShares);
   }
 
@@ -530,8 +514,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
   function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
     (, uint256 base0, uint256 base1) = getBasePosition();
-    (, total0) = state.token0.balanceOf(address(this)).tryAdd(base0);
-    (, total1) = state.token1.balanceOf(address(this)).tryAdd(base1);
+    total0 = state.token0.balanceOf(address(this)) + base0;
+    total1 = state.token1.balanceOf(address(this)) + base1;
 
     return (total0, total1);
   }
@@ -545,8 +529,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   function getBasePosition() public view override returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
     (uint128 positionLiquidity, uint128 tokensOwed0, uint128 tokensOwed1) = _position();
     (amount0, amount1) = _amountsForLiquidity(state.currentTickLower, state.currentTickUpper, positionLiquidity);
-    (, amount0) = amount0.tryAdd(uint256(tokensOwed0));
-    (, amount1) = amount1.tryAdd(uint256(tokensOwed1));
+    amount0 = amount0 + tokensOwed0;
+    amount1 = amount1 + tokensOwed1;
     liquidity = positionLiquidity;
 
     return (liquidity, amount0, amount1);

@@ -13,3 +13,7 @@ export interface IConfig {
   maintainerMultisig?: string;
   uniswapV3Factory?: string;
 }
+
+export interface ITestConfig {
+  nfpm: string;
+}
