@@ -94,6 +94,116 @@ describe("KrystalVaultV3Factory", function () {
     vaultCount = await factory.allVaultsLength();
     expect(vaultCount).to.equal(1);
   });
+
+  it("Should error when input wrong data", async () => {
+    await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+    await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token0.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(factory, "IdenticalAddresses");
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: "0x0000000000000000000000000000000000000000",
+          token1: await token0.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(factory, "ZeroAddress");
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token1.getAddress(),
+          fee: 4000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(factory, "InvalidFee");
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: "0x0000000000000000000000000000000000000001",
+          token1: await token1.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(factory, "PoolNotFound");
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token1.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1000000"),
+          amount1Desired: parseEther("1000000"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(token0, "ERC20InsufficientAllowance");
+  });
 });
 
 describe("KrystalVaultV3", function () {
