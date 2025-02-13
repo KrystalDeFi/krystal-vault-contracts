@@ -8,8 +8,7 @@ chai.use(chaiAsPromised);
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 import krystalVaultV3ABI from "../abi/KrystalVaultV3.json";
-import nfpmAbi from "../abi/INonfungiblePositionManager.json";
-import { KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
+import { INonfungiblePositionManager, KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
 import { blockNumber } from "../helpers/vm";
 import { BaseConfig } from "../scripts/config_base";
 import { getMaxTick, getMinTick, tickToPrice } from "../helpers/univ3";
@@ -51,17 +50,18 @@ describe("KrystalVaultV3Factory", function () {
     console.log("token0", await token0.getAddress());
     console.log("token1", await token1.getAddress());
 
-    const nfpm = new ethers.Contract(nfpmAddr, nfpmAbi, await ethers.provider.getSigner());
+    const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
     const poolAddr = await nfpm.createAndInitializePoolIfNecessary(
       await token0.getAddress(),
       await token1.getAddress(),
       3000,
       "79228162514264337593543950336",
     );
-    console.log("pool", poolAddr);
   });
 
   it("Should create a new vault", async () => {
+    await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+    await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     const tx = await factory.connect(alice).createVault(
       nfpmAddr,
       {
