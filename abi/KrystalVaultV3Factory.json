@@ -88,6 +88,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "PoolNotFound",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",

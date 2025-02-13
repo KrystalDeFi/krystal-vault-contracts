@@ -61,7 +61,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     IUniswapV3Pool pool = IUniswapV3Pool(_pool);
 
     state = VaultState({
-      pool: IUniswapV3Pool(_pool),
+      pool: pool,
       nfpm: INonfungiblePositionManager(_nfpm),
       token0: IERC20(pool.token0()),
       token1: IERC20(pool.token1()),
@@ -90,7 +90,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
 
-    uint256 shares = amount1Desired + ((amount0Desired * priceX96) / FixedPoint96.Q96);
+    uint256 shares = amount1Desired + (FullMath.mulDiv(amount0Desired, priceX96, FixedPoint96.Q96));
 
     INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
       token0: address(state.token0),
@@ -146,8 +146,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     uint256 total = totalSupply();
 
     shares =
-      ((amount1Desired + ((amount0Desired * priceX96) / FixedPoint96.Q96)) * total) /
-      (total1 + (total0 * priceX96) / FixedPoint96.Q96);
+      ((amount1Desired + FullMath.mulDiv(amount0Desired, priceX96, FixedPoint96.Q96)) * total) /
+      (total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96));
 
     if (amount0Desired > 0) {
       state.token0.safeTransferFrom(_msgSender(), address(this), amount0Desired);
@@ -231,8 +231,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     );
 
     // Push tokens proportional to unused balances
-    uint256 unusedAmount0 = (state.token0.balanceOf(address(this)) * shares) / totalSupply();
-    uint256 unusedAmount1 = (state.token1.balanceOf(address(this)) * shares) / totalSupply();
+    uint256 unusedAmount0 = FullMath.mulDiv(state.token0.balanceOf(address(this)), shares, totalSupply());
+    uint256 unusedAmount1 = FullMath.mulDiv(state.token1.balanceOf(address(this)), shares, totalSupply());
 
     if (unusedAmount0 > 0) state.token0.safeTransfer(to, unusedAmount0);
     if (unusedAmount1 > 0) state.token1.safeTransfer(to, unusedAmount1);
@@ -270,8 +270,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     _decreaseLiquidityAndCollectFees(liquidity, address(this), true, amount0Min, amount1Min);
 
     // Push tokens proportional to unused balances
-    uint256 totalAmount0 = (state.token0.balanceOf(address(this)) * shares) / totalSupply();
-    uint256 totalAmount1 = (state.token1.balanceOf(address(this)) * shares) / totalSupply();
+    uint256 totalAmount0 = FullMath.mulDiv(state.token0.balanceOf(address(this)), shares, totalSupply());
+    uint256 totalAmount1 = FullMath.mulDiv(state.token1.balanceOf(address(this)), shares, totalSupply());
 
     if (totalAmount0 > 0) state.token0.safeTransfer(to, totalAmount0);
     if (totalAmount1 > 0) state.token1.safeTransfer(to, totalAmount1);

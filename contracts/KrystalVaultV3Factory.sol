@@ -59,7 +59,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
 
     address pool = uniswapV3Factory.getPool(token0, token1, params.fee);
     if (pool == address(0)) {
-      pool = uniswapV3Factory.createPool(token0, token1, params.fee);
+      revert PoolNotFound();
     }
 
     KrystalVaultV3 vault = new KrystalVaultV3(nfpm, pool, _msgSender(), name, symbol);

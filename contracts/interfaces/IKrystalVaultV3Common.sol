@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 pragma solidity ^0.8.28;
-pragma abicoder v2;
 
 interface IKrystalVaultV3Common {
   error ZeroAddress();
@@ -13,6 +12,8 @@ interface IKrystalVaultV3Common {
   error ExceededSupply();
 
   error Unauthorized();
+
+  error PoolNotFound();
 
   error InvalidFee();
 
