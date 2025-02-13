@@ -62,6 +62,7 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: true,
         url: `https://mainnet.base.org`,
+        blockNumber: 26313000,
       },
       accounts: {
         count: 10,

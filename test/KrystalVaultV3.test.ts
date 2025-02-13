@@ -1,5 +1,5 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { ethers, network } from "hardhat";
 import { Contract, keccak256, parseEther } from "ethers";
 import * as chai from "chai";
 
@@ -8,37 +8,73 @@ chai.use(chaiAsPromised);
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
 import krystalVaultV3ABI from "../abi/KrystalVaultV3.json";
-import { KrystalVaultV3Factory } from "../typechain-types";
+import nfpmAbi from "../abi/INonfungiblePositionManager.json";
+import { KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
 import { blockNumber } from "../helpers/vm";
 import { BaseConfig } from "../scripts/config_base";
-import { getMaxTick, getMinTick } from "../helpers/univ3";
+import { getMaxTick, getMinTick, tickToPrice } from "../helpers/univ3";
+
+async function impersonateAccount(address: string): Promise<HardhatEthersSigner> {
+  const signer = await network.provider.request({
+    method: "hardhat_impersonateAccount",
+    params: [address],
+  });
+  return signer as HardhatEthersSigner;
+}
 
 describe("KrystalVaultV3Factory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
   let factory: KrystalVaultV3Factory;
   let vaultAddress: string;
+  let token0: TestERC20;
+  let token1: TestERC20;
+  let nfpmAddr = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1";
 
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
     factory = await ethers.deployContract("KrystalVaultV3Factory", [BaseConfig.base_mainnet.uniswapV3Factory]);
     await factory.waitForDeployment();
+    console.log("factory deployed at: ", await factory.getAddress());
+
+    token0 = await ethers.deployContract("TestERC20", [parseEther("1000000")]);
+    await token0.waitForDeployment();
+    token1 = await ethers.deployContract("TestERC20", [parseEther("1000000")]);
+    await token1.waitForDeployment();
+    const t0Addr = await token0.getAddress();
+    const t1Addr = await token1.getAddress();
+    if (t1Addr < t0Addr) {
+      [token0, token1] = [token1, token0];
+    }
+    await token0.transfer(await alice.getAddress(), parseEther("1000"));
+    await token1.transfer(await alice.getAddress(), parseEther("1000"));
+    console.log("token0", await token0.getAddress());
+    console.log("token1", await token1.getAddress());
+
+    const nfpm = new ethers.Contract(nfpmAddr, nfpmAbi, await ethers.provider.getSigner());
+    const poolAddr = await nfpm.createAndInitializePoolIfNecessary(
+      await token0.getAddress(),
+      await token1.getAddress(),
+      3000,
+      "79228162514264337593543950336",
+    );
+    console.log("pool", poolAddr);
   });
 
   it("Should create a new vault", async () => {
-    const tx = await factory.createVault(
-      "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1",
+    const tx = await factory.connect(alice).createVault(
+      nfpmAddr,
       {
-        token0: "0x4200000000000000000000000000000000000006",
-        token1: "0x52C2b317eb0bb61e650683D2f287f56C413E4CF6",
+        token0: await token0.getAddress(),
+        token1: await token1.getAddress(),
         fee: 3000,
-        tickLower: getMinTick(60),
+        tickLower: getMinTick(-60),
         tickUpper: getMaxTick(60),
-        amount0Desired: parseEther("0.1"),
-        amount1Desired: parseEther("1000"),
-        amount0Min: parseEther("0.09"),
-        amount1Min: parseEther("900"),
-        recipient: "0xC1149cDA92B99CD17Ce66D82E599707f91D24BcA",
+        amount0Desired: parseEther("1"),
+        amount1Desired: parseEther("1"),
+        amount0Min: parseEther("0.9"),
+        amount1Min: parseEther("0.9"),
+        recipient: alice,
         deadline: (await blockNumber()) + 100,
       },
       "Vault Name",
