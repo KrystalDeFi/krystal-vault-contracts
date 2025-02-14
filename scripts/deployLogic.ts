@@ -1,6 +1,6 @@
 import { ethers, network, run } from "hardhat";
 import { NetworkConfig } from "../configs/networkConfig";
-import { KrystalVaultV3Factory } from "../typechain-types";
+import { KrystalVaultV3, KrystalVaultV3Factory } from "../typechain-types";
 import { BaseContract } from "ethers";
 import { IConfig } from "../configs/interfaces";
 import { sleep } from "./helpers";
@@ -11,6 +11,7 @@ if (!networkConfig) {
 }
 
 export interface Contracts {
+  krystalVaultV3?: KrystalVaultV3;
   krystalVaultV3Factory?: KrystalVaultV3Factory;
 }
 
@@ -41,9 +42,34 @@ async function deployContracts(
   let step = 0;
 
   return {
+    ...(await deployKrystalVaultV3Contract(++step, existingContract, deployer)),
     ...(await deployKrystalVaultV3FactoryContract(++step, existingContract, deployer)),
   };
 }
+
+export const deployKrystalVaultV3Contract = async (
+  step: number,
+  existingContract: Record<string, any> | undefined,
+  deployer: string,
+  customNetworkConfig?: IConfig,
+): Promise<Contracts> => {
+  const config = { ...networkConfig, ...customNetworkConfig };
+
+  let krystalVaultV3;
+  if (config.krystalVaultV3?.enabled) {
+    krystalVaultV3 = (await deployContract(
+      `${step} >>`,
+      config.krystalVaultV3?.autoVerifyContract,
+      "KrystalVaultV3",
+      existingContract?.["krystalVaultV3"],
+      "contracts/KrystalVaultV3.sol:KrystalVaultV3",
+    )) as KrystalVaultV3;
+  }
+  return {
+    krystalVaultV3,
+  };
+};
+
 export const deployKrystalVaultV3FactoryContract = async (
   step: number,
   existingContract: Record<string, any> | undefined,
@@ -61,6 +87,7 @@ export const deployKrystalVaultV3FactoryContract = async (
       existingContract?.["krystalVaultV3Factory"],
       "contracts/KrystalVaultV3Factory.sol:KrystalVaultV3Factory",
       config.uniswapV3Factory,
+      existingContract?.["krystalVaultV3"],
     )) as KrystalVaultV3Factory;
   }
   return {

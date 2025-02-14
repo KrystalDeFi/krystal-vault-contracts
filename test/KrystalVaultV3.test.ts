@@ -18,6 +18,7 @@ chai.use(chaiAsPromised);
 
 describe("KrystalVaultV3Factory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
+  let implementation: KrystalVaultV3;
   let factory: KrystalVaultV3Factory;
   let vaultAddress: string;
   let token0: TestERC20;
@@ -27,7 +28,17 @@ describe("KrystalVaultV3Factory", function () {
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    factory = await ethers.deployContract("KrystalVaultV3Factory", [NetworkConfig.base_mainnet.uniswapV3Factory]);
+    implementation = await ethers.deployContract("KrystalVaultV3");
+
+    await implementation.waitForDeployment();
+
+    const implementationAddress = await implementation.getAddress();
+    console.log("implementation deployed at: ", implementationAddress);
+
+    factory = await ethers.deployContract("KrystalVaultV3Factory", [
+      NetworkConfig.base_mainnet.uniswapV3Factory,
+      implementationAddress,
+    ]);
 
     await factory.waitForDeployment();
     console.log("factory deployed at: ", await factory.getAddress());
@@ -61,8 +72,7 @@ describe("KrystalVaultV3Factory", function () {
   });
 
   it("Should create a new vault and return correct vault count", async () => {
-    let vaultCount = await factory.allVaultsLength();
-    expect(vaultCount).to.equal(0);
+    expect(factory.allVaults.length).to.equal(0);
 
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
@@ -91,8 +101,7 @@ describe("KrystalVaultV3Factory", function () {
     vaultAddress = last(receipt?.logs)?.args?.[1];
     expect(vaultAddress).to.be.properAddress;
 
-    vaultCount = await factory.allVaultsLength();
-    expect(vaultCount).to.equal(1);
+    expect(factory.allVaults.length).to.equal(1);
   });
 
   it("Should error when input wrong data", async () => {

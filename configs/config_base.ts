@@ -3,8 +3,12 @@ import { IConfig, ITestConfig } from "./interfaces";
 export const BaseConfig: Record<string, IConfig> = {
   base_mainnet: {
     sleepTime: 6 * 1000,
+    krystalVaultV3: {
+      enabled: true,
+      autoVerifyContract: true,
+    },
     krystalVaultV3Factory: {
-      enabled: false,
+      enabled: true,
       autoVerifyContract: true,
     },
     proxyAdminMultisig: "0xC1149cDA92B99CD17Ce66D82E599707f91D24BcA",

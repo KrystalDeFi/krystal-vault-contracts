@@ -18,6 +18,7 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     int24 currentTickLower;
     int24 currentTickUpper;
     int24 tickSpacing;
+    uint24 fee;
   }
 
   struct VaultConfig {
