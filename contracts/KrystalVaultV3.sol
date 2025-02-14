@@ -339,30 +339,21 @@ contract KrystalVaultV3 is
   function compound(uint256 amount0Min, uint256 amount1Min) external override onlyOwner {
     // update fees for compounding
     _collectFees();
+    _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
     // add liquidity
-    _mintLiquidity(
-      INonfungiblePositionManager.MintParams({
-        token0: address(state.token0),
-        token1: address(state.token1),
-        fee: state.fee,
-        tickLower: state.currentTickLower,
-        tickUpper: state.currentTickUpper,
+    INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager
+      .IncreaseLiquidityParams({
+        tokenId: state.currentTokenId,
         amount0Desired: state.token0.balanceOf(address(this)),
         amount1Desired: state.token1.balanceOf(address(this)),
         amount0Min: amount0Min,
         amount1Min: amount1Min,
-        recipient: address(this),
         deadline: block.timestamp
-      })
-    );
+      });
+    (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
 
-    emit Compound(
-      currentTick(),
-      state.token0.balanceOf(address(this)),
-      state.token1.balanceOf(address(this)),
-      totalSupply()
-    );
+    emit Compound(currentTick(), amount0Added, amount1Added, totalSupply());
   }
 
   /// @notice Callback function required by Uniswap V3 to finalize swaps

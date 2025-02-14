@@ -216,10 +216,8 @@ describe("KrystalVaultV3", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
   let token0: TestERC20, token1: TestERC20;
 
-  let vault: any;
-
   let aliceVaultContract: KrystalVaultV3;
-  let bobVaultContract: Contract;
+  let bobVaultContract: KrystalVaultV3;
 
   let vaultAddress: string;
   let nfpmAddr = TestConfig.base_mainnet.nfpm;
@@ -255,11 +253,10 @@ describe("KrystalVaultV3", function () {
     console.log("token0: ", await token0.getAddress());
     console.log("token1: ", await token1.getAddress());
 
-    await token0.transfer(await alice.getAddress(), parseEther("1000"));
-    await token1.transfer(await alice.getAddress(), parseEther("1000"));
-
-    await token0.connect(alice).approve(nfpmAddr, parseEther("1000"));
-    await token1.connect(alice).approve(nfpmAddr, parseEther("1000"));
+    await token0.transfer(alice, parseEther("1000"));
+    await token1.transfer(alice, parseEther("1000"));
+    await token0.transfer(bob, parseEther("1000"));
+    await token1.transfer(bob, parseEther("1000"));
 
     const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
     await nfpm.createAndInitializePoolIfNecessary(
@@ -269,36 +266,64 @@ describe("KrystalVaultV3", function () {
       "79228162514264337593543950336", // initial price = 1
     );
 
-    await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
-    await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+    {
+      await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+      await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
-    const tx = await factory.connect(alice).createVault(
-      nfpmAddr,
-      {
-        token0: await token0.getAddress(),
-        token1: await token1.getAddress(),
-        fee: 3000,
-        tickLower: getMinTick(60),
-        tickUpper: getMaxTick(60),
-        amount0Desired: parseEther("1"),
-        amount1Desired: parseEther("1"),
-        amount0Min: parseEther("0.9"),
-        amount1Min: parseEther("0.9"),
-        recipient: alice,
-        deadline: (await blockNumber()) + 100,
-      },
-      "Vault Name",
-      "VAULT",
-    );
+      const tx = await factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token1.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Alice Vault",
+        "VAULT",
+      );
 
-    const receipt = await tx.wait();
-    // @ts-ignore
-    vaultAddress = last(receipt?.logs)?.args?.[1];
-    console.log("aliceVaultContract deployed at: ", vaultAddress);
+      const receipt = await tx.wait();
+      // @ts-ignore
+      vaultAddress = last(receipt?.logs)?.args?.[1];
+      console.log("aliceVaultContract deployed at: ", vaultAddress);
+      aliceVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, alice);
+    }
 
-    aliceVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, alice);
+    {
+      await token0.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
+      await token1.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
+      const tx = await factory.connect(bob).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token1.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("100"),
+          amount1Desired: parseEther("100"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: bob,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Bob Vault",
+        "VAULT",
+      );
 
-    bobVaultContract = new ethers.Contract(vaultAddress, krystalVaultV3ABI, bob);
+      const receipt = await tx.wait();
+      // @ts-ignore
+      vaultAddress = last(receipt?.logs)?.args?.[1];
+      console.log("bobVault deployed at: ", vaultAddress);
+      bobVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, bob);
+    }
   });
 
   ////// Happy Path
@@ -352,22 +377,42 @@ describe("KrystalVaultV3", function () {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
 
+    await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+
     await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
+    await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
 
-    await vault.rebalance(-600, 600, 0, 0, 0, 0);
-
-    const [tickLower, tickUpper] = await vault.getCurrentTicks();
-    expect(tickLower).to.equal(-600);
-    expect(tickUpper).to.equal(600);
+    const state = await aliceVaultContract.state();
+    expect(state.currentTickLower).to.equal(-300);
+    expect(state.currentTickUpper).to.equal(600);
+    const pos = await aliceVaultContract.getBasePosition()
+    console.log(pos);
+    console.log(await token0.balanceOf(aliceVaultContract));
+    console.log(await token1.balanceOf(aliceVaultContract));
   });
 
   it("Should compound fees", async () => {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
 
-    await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
+    await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
 
-    await vault.compound(0, 0);
+    await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
+    // Do a rebalance to swap
+    await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
+    console.log("token0 balance: ", await token0.balanceOf(aliceVaultContract));
+    console.log("token1 balance: ", await token1.balanceOf(aliceVaultContract));
+    const posBefore = await aliceVaultContract.getBasePosition();
+    await aliceVaultContract.compound(0, 0);
+    const posAfter = await aliceVaultContract.getBasePosition();
+    expect(posAfter[0] - posBefore[0]).to.be.gt(0);
+    expect(posAfter[1] - posBefore[1]).to.be.gt(0);
+    expect(posAfter[2] - posBefore[2]).to.be.gt(0);
+
+    console.log("token0 balance: ", await token0.balanceOf(aliceVaultContract));
+    console.log("token1 balance: ", await token1.balanceOf(aliceVaultContract));
 
     const totalSupply = await aliceVaultContract.totalSupply();
     expect(totalSupply).to.be.gt(0);
