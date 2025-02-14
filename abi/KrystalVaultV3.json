@@ -247,6 +247,11 @@
     "type": "error"
   },
   {
+    "inputs": [],
+    "name": "Invalid_Tick_Range",
+    "type": "error"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
