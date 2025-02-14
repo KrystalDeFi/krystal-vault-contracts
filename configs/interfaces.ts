@@ -1,6 +1,10 @@
 export interface IConfig {
   autoVerifyContract?: boolean;
   sleepTime?: number;
+  krystalVaultV3: {
+    enabled?: boolean;
+    autoVerifyContract?: boolean;
+  };
   krystalVaultV3Factory?: {
     enabled?: boolean;
     autoVerifyContract?: boolean;

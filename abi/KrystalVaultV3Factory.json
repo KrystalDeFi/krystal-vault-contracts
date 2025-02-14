@@ -5,6 +5,11 @@
         "internalType": "address",
         "name": "uniswapV3FactoryAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "krystalVaultV3ImplementationAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -17,7 +22,28 @@
   },
   {
     "inputs": [],
+    "name": "FailedDeployment",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "IdenticalAddresses",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "balance",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "needed",
+        "type": "uint256"
+      }
+    ],
+    "name": "InsufficientBalance",
     "type": "error"
   },
   {
@@ -251,19 +277,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "allVaultsLength",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -356,6 +369,19 @@
   },
   {
     "inputs": [],
+    "name": "krystalVaultV3Implementation",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "owner",
     "outputs": [
       {
@@ -392,7 +418,7 @@
     "name": "uniswapV3Factory",
     "outputs": [
       {
-        "internalType": "contract IUniswapV3Factory",
+        "internalType": "address",
         "name": "",
         "type": "address"
       }

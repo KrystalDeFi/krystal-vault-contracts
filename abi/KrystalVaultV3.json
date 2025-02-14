@@ -1,32 +1,6 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_nfpm",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_pool",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_owner",
-        "type": "address"
-      },
-      {
-        "internalType": "string",
-        "name": "name",
-        "type": "string"
-      },
-      {
-        "internalType": "string",
-        "name": "symbol",
-        "type": "string"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -213,6 +187,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidInitialization",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidOwner",
     "type": "error"
   },
@@ -238,17 +217,17 @@
   },
   {
     "inputs": [],
-    "name": "InvalidShortString",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "InvalidVaultFactory",
     "type": "error"
   },
   {
     "inputs": [],
     "name": "Invalid_Tick_Range",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotInitializing",
     "type": "error"
   },
   {
@@ -292,17 +271,6 @@
       }
     ],
     "name": "SafeERC20FailedOperation",
-    "type": "error"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "str",
-        "type": "string"
-      }
-    ],
-    "name": "StringTooLong",
     "type": "error"
   },
   {
@@ -441,6 +409,19 @@
       }
     ],
     "name": "FeeCollected",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "version",
+        "type": "uint64"
+      }
+    ],
+    "name": "Initialized",
     "type": "event"
   },
   {
@@ -981,6 +962,39 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_nfpm",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pool",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "symbol",
+        "type": "string"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "int24",
         "name": "tickLower",
         "type": "int24"
@@ -1226,6 +1240,11 @@
         "internalType": "int24",
         "name": "tickSpacing",
         "type": "int24"
+      },
+      {
+        "internalType": "uint24",
+        "name": "fee",
+        "type": "uint24"
       }
     ],
     "stateMutability": "view",

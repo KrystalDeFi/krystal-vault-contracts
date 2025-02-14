@@ -4,10 +4,10 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
@@ -25,7 +25,13 @@ import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
 /// @title KrystalVaultV3
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
-contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV3, IUniswapV3SwapCallback {
+contract KrystalVaultV3 is
+  OwnableUpgradeable,
+  ERC20PermitUpgradeable,
+  ReentrancyGuard,
+  IKrystalVaultV3,
+  IUniswapV3SwapCallback
+{
   uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
   uint160 internal constant XOR_SQRT_RATIO = (4295128739 + 1) ^ (1461446703485210103287273052203988822378723970342 - 1);
 
@@ -37,21 +43,27 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
   VaultState public state;
   VaultConfig public config;
 
+  constructor() {}
+
   /// @param _nfpm Uniswap V3 nonfungible position manager address
   /// @param _pool Uniswap V3 pool address
   /// @param _owner Owner of the KrystalVaultV3
   /// @param name Name of the KrystalVaultV3
   /// @param symbol Symbol of the KrystalVaultV3
-  constructor(
+  function initialize(
     address _nfpm,
     address _pool,
     address _owner,
     string memory name,
     string memory symbol
-  ) ERC20(name, symbol) ERC20Permit(name) Ownable(_owner) {
+  ) public initializer {
     require(_nfpm != address(0), ZeroAddress());
     require(_pool != address(0), ZeroAddress());
     require(_owner != address(0), ZeroAddress());
+
+    __ERC20_init(name, symbol);
+    __ERC20Permit_init(name);
+    __Ownable_init(_owner);
 
     vaultFactory = _msgSender();
 
@@ -68,7 +80,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       currentTokenId: 0,
       currentTickLower: 0,
       currentTickUpper: 0,
-      tickSpacing: pool.tickSpacing()
+      tickSpacing: pool.tickSpacing(),
+      fee: pool.fee()
     });
   }
 
@@ -95,7 +108,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
       token0: address(state.token0),
       token1: address(state.token1),
-      fee: state.pool.fee(),
+      fee: state.fee,
       tickLower: tickLower,
       tickUpper: tickUpper,
       amount0Desired: state.token0.balanceOf(address(this)),
@@ -307,7 +320,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       INonfungiblePositionManager.MintParams({
         token0: address(state.token0),
         token1: address(state.token1),
-        fee: state.pool.fee(),
+        fee: state.fee,
         tickLower: state.currentTickLower,
         tickUpper: state.currentTickUpper,
         amount0Desired: state.token0.balanceOf(address(this)),
@@ -332,7 +345,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
       INonfungiblePositionManager.MintParams({
         token0: address(state.token0),
         token1: address(state.token1),
-        fee: state.pool.fee(),
+        fee: state.fee,
         tickLower: state.currentTickLower,
         tickUpper: state.currentTickUpper,
         amount0Desired: state.token0.balanceOf(address(this)),

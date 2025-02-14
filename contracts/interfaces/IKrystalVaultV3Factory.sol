@@ -22,8 +22,6 @@ interface IKrystalVaultV3Factory is IKrystalVaultV3Common {
     uint256 vaultsLength
   );
 
-  function allVaultsLength() external view returns (uint256);
-
   function createVault(
     address nfpm,
     INonfungiblePositionManager.MintParams memory params,
