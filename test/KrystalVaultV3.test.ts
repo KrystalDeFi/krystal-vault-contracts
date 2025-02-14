@@ -72,8 +72,6 @@ describe("KrystalVaultV3Factory", function () {
   });
 
   it("Should create a new vault and return correct vault count", async () => {
-    expect(factory.allVaults.length).to.equal(0);
-
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
@@ -100,8 +98,7 @@ describe("KrystalVaultV3Factory", function () {
     // @ts-ignore
     vaultAddress = last(receipt?.logs)?.args?.[1];
     expect(vaultAddress).to.be.properAddress;
-
-    expect(factory.allVaults.length).to.equal(1);
+    expect(await factory.allVaults(0)).to.equal(vaultAddress);
   });
 
   it("Should error when input wrong data", async () => {
@@ -229,7 +226,18 @@ describe("KrystalVaultV3", function () {
 
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
-    const factory = await ethers.deployContract("KrystalVaultV3Factory", [NetworkConfig.base_mainnet.uniswapV3Factory]);
+
+    const implementation = await ethers.deployContract("KrystalVaultV3");
+
+    await implementation.waitForDeployment();
+
+    const implementationAddress = await implementation.getAddress();
+    console.log("implementation deployed at: ", implementationAddress);
+
+    const factory = await ethers.deployContract("KrystalVaultV3Factory", [
+      NetworkConfig.base_mainnet.uniswapV3Factory,
+      implementationAddress,
+    ]);
 
     await factory.waitForDeployment();
     console.log("factory deployed at: ", await factory.getAddress());
@@ -297,10 +305,10 @@ describe("KrystalVaultV3", function () {
   it("Should deposit and withdraw from Vault", async () => {
     const amount0Desired = parseEther("2");
     const amount1Desired = parseEther("2");
-    let balance0Before: bigint
-    let balance1Before: bigint
-    let balance0After: bigint
-    let balance1After: bigint
+    let balance0Before: bigint;
+    let balance1Before: bigint;
+    let balance0After: bigint;
+    let balance1After: bigint;
 
     await token0.transfer(bob, parseEther("1000"));
     await token1.transfer(bob, parseEther("1000"));

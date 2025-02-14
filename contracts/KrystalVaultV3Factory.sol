@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
+import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +16,7 @@ import "./interfaces/IKrystalVaultV3Factory.sol";
 /// @title KrystalVaultV3Factory
 contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
   using SafeERC20 for IERC20;
-  address public uniswapV3Factory;
+  IUniswapV3Factory public uniswapV3Factory;
   address public krystalVaultV3Implementation;
 
   mapping(address => Vault[]) public vaultsByAddress;
@@ -25,7 +26,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
   constructor(address uniswapV3FactoryAddress, address krystalVaultV3ImplementationAddress) Ownable(_msgSender()) {
     require(uniswapV3FactoryAddress != address(0), ZeroAddress());
     require(krystalVaultV3ImplementationAddress != address(0), ZeroAddress());
-    uniswapV3Factory = uniswapV3FactoryAddress;
+    uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
     krystalVaultV3Implementation = krystalVaultV3ImplementationAddress;
   }
 
@@ -50,7 +51,11 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
     require(token0 != address(0), ZeroAddress());
     require(token1 != address(0), ZeroAddress());
 
-    address pool = PoolAddress.computeAddress(uniswapV3Factory, PoolAddress.getPoolKey(token0, token1, params.fee));
+    int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(params.fee);
+
+    require(tickSpacing != 0, InvalidFee());
+
+    address pool = uniswapV3Factory.getPool(token0, token1, params.fee);
     if (pool == address(0)) {
       revert PoolNotFound();
     }

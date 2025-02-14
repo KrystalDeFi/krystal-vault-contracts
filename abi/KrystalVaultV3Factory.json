@@ -418,7 +418,7 @@
     "name": "uniswapV3Factory",
     "outputs": [
       {
-        "internalType": "address",
+        "internalType": "contract IUniswapV3Factory",
         "name": "",
         "type": "address"
       }
