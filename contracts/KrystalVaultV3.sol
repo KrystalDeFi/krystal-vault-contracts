@@ -112,7 +112,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     _mint(owner(), shares);
 
-    emit Deposit(owner(), shares, amount0, amount1);
+    emit VaultDeposit(owner(), shares, amount0, amount1);
   }
 
   /// @notice Deposit tokens
@@ -138,6 +138,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     /// update fees
     _collectFees();
+    /// optimially swap tokens
+    _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
@@ -172,7 +174,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     _mint(to, shares);
 
-    emit Deposit(to, shares, amount0Added, amount1Added);
+    emit VaultDeposit(to, shares, amount0Added, amount1Added);
     return shares;
   }
 
@@ -216,7 +218,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     _burn(_msgSender(), shares);
 
-    emit Withdraw(_msgSender(), to, shares, amount0, amount1);
+    emit VaultWithdraw(_msgSender(), to, shares, amount0, amount1);
 
     return (amount0, amount1);
   }
@@ -247,12 +249,15 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     if (totalAmount1 > 0) state.token1.safeTransfer(to, totalAmount1);
 
     _burn(_msgSender(), shares);
+    uint256 tokenId = state.currentTokenId;
+
+    state.nfpm.burn(state.currentTokenId);
 
     state.currentTokenId = 0;
     state.currentTickLower = 0;
     state.currentTickUpper = 0;
 
-    emit Exit(_msgSender(), to, shares, totalAmount0, totalAmount1);
+    emit VaultExit(_msgSender(), to, shares, totalAmount0, totalAmount1, tokenId);
   }
 
   /// @notice Rebalance position to new range
@@ -284,7 +289,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     _decreaseLiquidityAndCollectFees(baseLiquidity, address(this), true, decreasedAmount0Min, decreasedAmount1Min);
 
-    emit Rebalance(
+    emit VaultRebalance(
       currentTick(),
       state.token0.balanceOf(address(this)),
       state.token1.balanceOf(address(this)),
@@ -295,6 +300,8 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
 
     state.currentTickLower = _newTickLower;
     state.currentTickUpper = _newTickUpper;
+    // optimially swap tokens
+    _optimalSwap(_newTickLower, _newTickUpper);
 
     _mintLiquidity(
       INonfungiblePositionManager.MintParams({
@@ -402,16 +409,9 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     (tokenId, liquidity, amount0, amount1) = state.nfpm.mint(params);
 
     state.currentTokenId = tokenId;
+    emit VaultPositionMint(tokenId);
 
     return (tokenId, liquidity, amount0, amount1);
-  }
-
-  function _increaseLiquidity(
-    INonfungiblePositionManager.IncreaseLiquidityParams memory params
-  ) internal returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
-    (liquidity, amount0, amount1) = state.nfpm.increaseLiquidity(params);
-
-    return (liquidity, amount0, amount1);
   }
 
   /// @notice Decrease liquidity from the sender and collect tokens owed for the liquidity

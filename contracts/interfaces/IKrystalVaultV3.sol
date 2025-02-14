@@ -27,13 +27,22 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     address feeRecipient;
   }
 
-  event Deposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
+  event VaultPositionMint(uint256 indexed tokenId);
 
-  event Withdraw(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
+  event VaultDeposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
 
-  event Exit(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
+  event VaultWithdraw(address indexed sender, address indexed to, uint256 shares, uint256 amount0, uint256 amount1);
 
-  event Rebalance(
+  event VaultExit(
+    address indexed sender,
+    address indexed to,
+    uint256 shares,
+    uint256 amount0,
+    uint256 amount1,
+    uint256 tokenId
+  );
+
+  event VaultRebalance(
     int24 tick,
     uint256 totalAmount0,
     uint256 totalAmount1,
