@@ -221,16 +221,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "Invalid_Tick_Range",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "NotInitializing",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
