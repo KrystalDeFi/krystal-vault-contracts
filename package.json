@@ -6,7 +6,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "compile": "hardhat compile",
-    "test": "hardhat test",
+    "test": "hardhat test && hardhat coverage",
     "deploy": "./cmd.sh -x deploy",
     "verify": "hardhat verify --network",
     "prettier:check": "prettier --check \"**/*.{json,md,yml}\"",

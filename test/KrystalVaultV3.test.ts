@@ -210,6 +210,33 @@ describe("KrystalVaultV3Factory", function () {
       ),
     ).to.be.revertedWithCustomError(token0, "ERC20InsufficientAllowance");
   });
+
+  it("Should not create vault while contract is paused", async () => {
+    await factory.connect(owner).pause();
+    await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+    await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+
+    await expect(
+      factory.connect(alice).createVault(
+        nfpmAddr,
+        {
+          token0: await token0.getAddress(),
+          token1: await token1.getAddress(),
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("1"),
+          amount1Desired: parseEther("1"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        "Vault Name",
+        "VAULT",
+      ),
+    ).to.be.revertedWithCustomError(factory, "EnforcedPause");
+  });
 });
 
 describe("KrystalVaultV3", function () {
@@ -386,7 +413,7 @@ describe("KrystalVaultV3", function () {
     const state = await aliceVaultContract.state();
     expect(state.currentTickLower).to.equal(-300);
     expect(state.currentTickUpper).to.equal(600);
-    const pos = await aliceVaultContract.getBasePosition()
+    const pos = await aliceVaultContract.getBasePosition();
     console.log(pos);
     console.log(await token0.balanceOf(aliceVaultContract));
     console.log(await token1.balanceOf(aliceVaultContract));

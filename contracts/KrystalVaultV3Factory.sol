@@ -7,6 +7,7 @@ import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/int
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import { KrystalVaultV3 } from "./KrystalVaultV3.sol";
@@ -14,7 +15,7 @@ import { KrystalVaultV3 } from "./KrystalVaultV3.sol";
 import "./interfaces/IKrystalVaultV3Factory.sol";
 
 /// @title KrystalVaultV3Factory
-contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
+contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
   using SafeERC20 for IERC20;
   IUniswapV3Factory public uniswapV3Factory;
   address public krystalVaultV3Implementation;
@@ -41,7 +42,7 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
     INonfungiblePositionManager.MintParams memory params,
     string memory name,
     string memory symbol
-  ) external override returns (address krystalVaultV3) {
+  ) external override whenNotPaused returns (address krystalVaultV3) {
     require(params.token0 != params.token1, IdenticalAddresses());
 
     (address token0, address token1) = params.token0 < params.token1
@@ -83,5 +84,13 @@ contract KrystalVaultV3Factory is Ownable, IKrystalVaultV3Factory {
     emit VaultCreated(_msgSender(), krystalVaultV3, nfpm, params, allVaults.length);
 
     return krystalVaultV3;
+  }
+
+  function pause() public onlyOwner {
+    _pause();
+  }
+
+  function unpause() public onlyOwner {
+    _unpause();
   }
 }
