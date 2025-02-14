@@ -97,11 +97,6 @@
     "type": "error"
   },
   {
-    "inputs": [],
-    "name": "InvalidVaultFactory",
-    "type": "error"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",

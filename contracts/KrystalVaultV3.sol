@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
@@ -26,12 +26,14 @@ import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
 contract KrystalVaultV3 is
-  OwnableUpgradeable,
+  AccessControlUpgradeable,
   ERC20PermitUpgradeable,
   ReentrancyGuard,
   IKrystalVaultV3,
   IUniswapV3SwapCallback
 {
+  bytes32 public constant ADMIN_ROLE_HASH = keccak256("ADMIN_ROLE");
+
   uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
   uint160 internal constant XOR_SQRT_RATIO = (4295128739 + 1) ^ (1461446703485210103287273052203988822378723970342 - 1);
 
@@ -63,7 +65,10 @@ contract KrystalVaultV3 is
 
     __ERC20_init(name, symbol);
     __ERC20Permit_init(name);
-    __Ownable_init(_owner);
+    __AccessControl_init();
+
+    _grantRole(DEFAULT_ADMIN_ROLE, _owner);
+    _grantRole(ADMIN_ROLE_HASH, _owner);
 
     vaultFactory = _msgSender();
 
@@ -86,19 +91,27 @@ contract KrystalVaultV3 is
   }
 
   modifier onlyVaultFactory() {
-    require(vaultFactory == _msgSender(), InvalidVaultFactory());
+    require(vaultFactory == _msgSender(), Unauthorized());
     _;
   }
 
+  /// @notice Mint a new position
+  /// @param owner Address of the owner of the position
+  /// @param tickLower The lower tick of the base position
+  /// @param tickUpper The upper tick of the base position
+  /// @param amount0Min Minimum amount of token0 to deposit
+  /// @param amount1Min Minimum amount of token1 to deposit
   function mintPosition(
+    address owner,
     int24 tickLower,
     int24 tickUpper,
-    uint256 amount0Desired,
-    uint256 amount1Desired,
     uint256 amount0Min,
     uint256 amount1Min
   ) external override onlyVaultFactory returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) {
     require(state.currentTokenId == 0, InvalidPosition());
+
+    uint256 amount0Desired = state.token0.balanceOf(address(this));
+    uint256 amount1Desired = state.token1.balanceOf(address(this));
 
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
@@ -111,8 +124,8 @@ contract KrystalVaultV3 is
       fee: state.fee,
       tickLower: tickLower,
       tickUpper: tickUpper,
-      amount0Desired: state.token0.balanceOf(address(this)),
-      amount1Desired: state.token1.balanceOf(address(this)),
+      amount0Desired: amount0Desired,
+      amount1Desired: amount1Desired,
       amount0Min: amount0Min,
       amount1Min: amount1Min,
       recipient: address(this),
@@ -123,9 +136,9 @@ contract KrystalVaultV3 is
     state.currentTickLower = tickLower;
     state.currentTickUpper = tickUpper;
 
-    _mint(owner(), shares);
+    _mint(owner, shares);
 
-    emit VaultDeposit(owner(), shares, amount0, amount1);
+    emit VaultDeposit(owner, shares, amount0, amount1);
   }
 
   /// @notice Deposit tokens
@@ -151,7 +164,7 @@ contract KrystalVaultV3 is
 
     /// update fees
     _collectFees();
-    /// optimially swap tokens
+    /// optimally swap tokens
     _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
@@ -240,7 +253,11 @@ contract KrystalVaultV3 is
   /// @param to Address to which redeemed pool assets are sent
   /// @param amount0Min Minimum amount of token0 to receive
   /// @param amount1Min Minimum amount of token1 to receive
-  function exit(address to, uint256 amount0Min, uint256 amount1Min) external override onlyOwner nonReentrant {
+  function exit(
+    address to,
+    uint256 amount0Min,
+    uint256 amount1Min
+  ) external override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
     uint256 shares = IERC20(address(this)).balanceOf(_msgSender());
 
     require(shares > 0, InvalidShares());
@@ -287,7 +304,7 @@ contract KrystalVaultV3 is
     uint256 decreasedAmount1Min,
     uint256 amount0Min,
     uint256 amount1Min
-  ) external override nonReentrant onlyOwner {
+  ) external override nonReentrant onlyRole(ADMIN_ROLE_HASH) {
     require(
       _newTickLower < _newTickUpper && _newTickLower % state.tickSpacing == 0 && _newTickUpper % state.tickSpacing == 0,
       InvalidPriceRange()
@@ -313,7 +330,7 @@ contract KrystalVaultV3 is
 
     state.currentTickLower = _newTickLower;
     state.currentTickUpper = _newTickUpper;
-    // optimially swap tokens
+    // optimally swap tokens
     _optimalSwap(_newTickLower, _newTickUpper);
 
     _mintLiquidity(
@@ -336,7 +353,7 @@ contract KrystalVaultV3 is
   /// @notice Compound fees
   /// @param amount0Min Minimum amount of token0 to receive
   /// @param amount1Min Minimum amount of token1 to receive
-  function compound(uint256 amount0Min, uint256 amount1Min) external override onlyOwner {
+  function compound(uint256 amount0Min, uint256 amount1Min) external override onlyRole(ADMIN_ROLE_HASH) {
     // update fees for compounding
     _collectFees();
     _optimalSwap(state.currentTickLower, state.currentTickUpper);
@@ -563,7 +580,7 @@ contract KrystalVaultV3 is
 
   /// @notice Set the fee basis points for the vault
   /// @param newFeeBasisPoints The new fee basis points to be set
-  function setFee(uint8 newFeeBasisPoints) external override onlyOwner {
+  function setFee(uint8 newFeeBasisPoints) external override onlyRole(DEFAULT_ADMIN_ROLE) {
     config.feeBasisPoints = newFeeBasisPoints;
 
     emit SetFee(config.feeBasisPoints);
@@ -629,6 +646,18 @@ contract KrystalVaultV3 is
         balance1 := add(balance1, xor(minusAmountIn, diff))
       }
     }
+  }
+
+  /// @notice grant admin role to the address
+  /// @param _address The address to which the admin role is granted
+  function grantAdminRole(address _address) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    grantRole(ADMIN_ROLE_HASH, _address);
+  }
+
+  /// @notice revoke admin role from the address
+  /// @param _address The address from which the admin role is revoked
+  function revokeAdminRole(address _address) external override onlyRole(DEFAULT_ADMIN_ROLE) {
+    revokeRole(ADMIN_ROLE_HASH, _address);
   }
 
   function _uint128Safe(uint256 x) internal pure returns (uint128) {

@@ -29,7 +29,5 @@ interface IKrystalVaultV3Common {
 
   error InvalidOwner();
 
-  error InvalidVaultFactory();
-
   error InvalidPosition();
 }

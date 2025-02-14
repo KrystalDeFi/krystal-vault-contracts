@@ -51,11 +51,6 @@
   },
   {
     "inputs": [],
-    "name": "InvalidVaultFactory",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "PoolNotFound",
     "type": "error"
   },

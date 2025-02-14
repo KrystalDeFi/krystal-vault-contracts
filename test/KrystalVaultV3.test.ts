@@ -71,6 +71,7 @@ describe("KrystalVaultV3Factory", function () {
     );
   });
 
+  ////// Happy Path
   it("Should create a new vault and return correct vault count", async () => {
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
@@ -101,6 +102,7 @@ describe("KrystalVaultV3Factory", function () {
     expect(await factory.allVaults(0)).to.equal(vaultAddress);
   });
 
+  ////// Error Path
   it("Should error when input wrong data", async () => {
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
@@ -211,6 +213,7 @@ describe("KrystalVaultV3Factory", function () {
     ).to.be.revertedWithCustomError(token0, "ERC20InsufficientAllowance");
   });
 
+  ////// Error Path
   it("Should not create vault while contract is paused", async () => {
     await factory.connect(owner).pause();
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
@@ -400,6 +403,7 @@ describe("KrystalVaultV3", function () {
     expect(totalSupply).to.be.gt(0);
   });
 
+  ////// Happy Path
   it("Should rebalance the Vault", async () => {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
@@ -419,6 +423,7 @@ describe("KrystalVaultV3", function () {
     console.log(await token1.balanceOf(aliceVaultContract));
   });
 
+  ////// Happy Path
   it("Should compound fees", async () => {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
@@ -443,5 +448,36 @@ describe("KrystalVaultV3", function () {
 
     const totalSupply = await aliceVaultContract.totalSupply();
     expect(totalSupply).to.be.gt(0);
+  });
+
+  ////// Error Path
+  it("Should not available to mint position again", async () => {
+    await expect(aliceVaultContract.mintPosition(alice.address, 0, 0, 0, 0)).to.be.revertedWithCustomError(
+      aliceVaultContract,
+      "Unauthorized",
+    );
+  });
+
+  ////// Error Path
+  it("Should not available to action if not authorized", async () => {
+    await expect(aliceVaultContract.connect(bob).exit(bob.address, 0, 0)).to.be.revertedWithCustomError(
+      aliceVaultContract,
+      "AccessControlUnauthorizedAccount",
+    );
+
+    await expect(aliceVaultContract.connect(bob).rebalance(0, 0, 0, 0, 0, 0)).to.be.revertedWithCustomError(
+      aliceVaultContract,
+      "AccessControlUnauthorizedAccount",
+    );
+
+    await expect(aliceVaultContract.connect(bob).compound(0, 0)).to.be.revertedWithCustomError(
+      aliceVaultContract,
+      "AccessControlUnauthorizedAccount",
+    );
+
+    await expect(aliceVaultContract.connect(bob).setFee(0)).to.be.revertedWithCustomError(
+      aliceVaultContract,
+      "AccessControlUnauthorizedAccount",
+    );
   });
 });

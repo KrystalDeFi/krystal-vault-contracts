@@ -63,10 +63,9 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   event SetFee(uint8 newFee);
 
   function mintPosition(
+    address owner,
     int24 tickLower,
     int24 tickUpper,
-    uint256 amount0Desired,
-    uint256 amount1Desired,
     uint256 amount0Min,
     uint256 amount1Min
   ) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
@@ -106,4 +105,8 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   function currentTick() external view returns (int24 tick);
 
   function setFee(uint8 newFee) external;
+
+  function grantAdminRole(address _address) external;
+
+  function revokeAdminRole(address _address) external;
 }

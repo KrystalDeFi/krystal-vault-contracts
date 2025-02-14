@@ -69,14 +69,7 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
     IERC20(token0).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount0Desired);
     IERC20(token1).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount1Desired);
 
-    vault.mintPosition(
-      params.tickLower,
-      params.tickUpper,
-      params.amount0Desired,
-      params.amount1Desired,
-      params.amount0Min,
-      params.amount1Min
-    );
+    vault.mintPosition(_msgSender(), params.tickLower, params.tickUpper, params.amount0Min, params.amount1Min);
 
     vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, nfpm, params));
     allVaults.push(krystalVaultV3);
