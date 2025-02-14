@@ -139,7 +139,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     /// update fees
     _collectFees();
     /// optimially swap tokens
-    _optimalSwap(state.currentTickLower, state.currentTickUpper);
+    // _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
@@ -301,7 +301,7 @@ contract KrystalVaultV3 is Ownable, ERC20Permit, ReentrancyGuard, IKrystalVaultV
     state.currentTickLower = _newTickLower;
     state.currentTickUpper = _newTickUpper;
     // optimially swap tokens
-    _optimalSwap(_newTickLower, _newTickUpper);
+    // _optimalSwap(_newTickLower, _newTickUpper);
 
     _mintLiquidity(
       INonfungiblePositionManager.MintParams({
