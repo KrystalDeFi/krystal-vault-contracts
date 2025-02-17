@@ -16,8 +16,6 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
-import { TernaryLib } from "@aperture_finance/uni-v3-lib/src/TernaryLib.sol";
-
 import "./interfaces/IKrystalVaultV3.sol";
 import "./interfaces/IOptimalSwapper.sol";
 
@@ -31,7 +29,6 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
   uint160 internal constant XOR_SQRT_RATIO = (4295128739 + 1) ^ (1461446703485210103287273052203988822378723970342 - 1);
 
   using SafeERC20 for IERC20;
-  using TernaryLib for bool;
 
   address public vaultFactory;
 
