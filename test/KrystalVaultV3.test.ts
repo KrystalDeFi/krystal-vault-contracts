@@ -426,17 +426,36 @@ describe("KrystalVaultV3", function () {
     await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
 
     await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
-    await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
+    {
+      await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
+      const state = await aliceVaultContract.state();
+      expect(state.currentTickLower).to.equal(-300);
+      expect(state.currentTickUpper).to.equal(600);
+      const pos = await aliceVaultContract.getBasePosition();
+      expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
+      expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
+    }
+    {
+      // Out range, currentTick > tickUpper
+      await aliceVaultContract.rebalance(-600, -300, 0, 0, 0, 0);
+      const state = await aliceVaultContract.state();
+      expect(state.currentTickLower).to.equal(-600);
+      expect(state.currentTickUpper).to.equal(-300);
+      const pos = await aliceVaultContract.getBasePosition();
+      expect(pos[1]).to.be.equal(BigInt("352204794643264249"));
+      expect(pos[2]).to.be.equal(BigInt("0"));
+    }
+    {
+      // Out range, currentTick < tickLower
+      await aliceVaultContract.rebalance(300, 600, 0, 0, 0, 0);
+      const state = await aliceVaultContract.state();
+      expect(state.currentTickLower).to.equal(300);
+      expect(state.currentTickUpper).to.equal(600);
+      const pos = await aliceVaultContract.getBasePosition();
+      expect(pos[1]).to.be.equal(BigInt("0"));
+      expect(pos[2]).to.be.equal(BigInt("3614246991881744932"));
+    }
 
-    const state = await aliceVaultContract.state();
-    expect(state.currentTickLower).to.equal(-300);
-    expect(state.currentTickUpper).to.equal(600);
-    const pos = await aliceVaultContract.getBasePosition();
-    console.log(pos);
-    expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
-    expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
-    console.log(await token0.balanceOf(aliceVaultContract));
-    console.log(await token1.balanceOf(aliceVaultContract));
   });
 
   ////// Happy Path
