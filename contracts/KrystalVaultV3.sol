@@ -70,6 +70,8 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
 
     vaultFactory = _msgSender();
 
+    optimalSwapper = IOptimalSwapper(_optimalSwapper);
+
     // platformFeeBasisPoint is in basis points (1% = 100 basis points)
     config = VaultConfig({
       platformFeeBasisPoint: platformFeeBasisPoint,
@@ -89,7 +91,6 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
       tickSpacing: IUniswapV3Pool(_pool).tickSpacing(),
       fee: IUniswapV3Pool(_pool).fee()
     });
-    optimalSwapper = IOptimalSwapper(_optimalSwapper);
   }
 
   modifier onlyVaultFactory() {

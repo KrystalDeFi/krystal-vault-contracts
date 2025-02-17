@@ -31,14 +31,21 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
   constructor(
     address uniswapV3FactoryAddress,
     address krystalVaultV3ImplementationAddress,
-    address optimalSwapperAddress
+    address optimalSwapperAddress,
+    address platformFeeRecipientAddress,
+    uint16 _platformFeeBasisPoint,
+    uint16 _ownerFeeBasisPoint
   ) Ownable(_msgSender()) {
     require(uniswapV3FactoryAddress != address(0), ZeroAddress());
     require(krystalVaultV3ImplementationAddress != address(0), ZeroAddress());
     require(optimalSwapperAddress != address(0), ZeroAddress());
+    require(platformFeeRecipientAddress != address(0), ZeroAddress());
     uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
     krystalVaultV3Implementation = krystalVaultV3ImplementationAddress;
     optimalSwapper = optimalSwapperAddress;
+    platformFeeRecipient = platformFeeRecipientAddress;
+    platformFeeBasisPoint = _platformFeeBasisPoint;
+    ownerFeeBasisPoint = _ownerFeeBasisPoint;
   }
 
   /// @notice Create a KrystalVaultV3

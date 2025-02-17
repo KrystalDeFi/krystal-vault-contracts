@@ -1,6 +1,6 @@
 import { ethers, network, run } from "hardhat";
 import { NetworkConfig } from "../configs/networkConfig";
-import { KrystalVaultV3, KrystalVaultV3Factory } from "../typechain-types";
+import { KrystalVaultV3, KrystalVaultV3Factory, PoolOptimalSwapper } from "../typechain-types";
 import { BaseContract } from "ethers";
 import { IConfig } from "../configs/interfaces";
 import { sleep } from "./helpers";
@@ -11,6 +11,7 @@ if (!networkConfig) {
 }
 
 export interface Contracts {
+  poolOptimalSwapper?: PoolOptimalSwapper;
   krystalVaultV3?: KrystalVaultV3;
   krystalVaultV3Factory?: KrystalVaultV3Factory;
 }
@@ -41,11 +42,43 @@ async function deployContracts(
 ): Promise<Contracts> {
   let step = 0;
 
-  return {
-    ...(await deployKrystalVaultV3Contract(++step, existingContract, deployer)),
-    ...(await deployKrystalVaultV3FactoryContract(++step, existingContract, deployer)),
+  const poolOptimalSwapper = await deployPoolOptimalSwapperContract(++step, existingContract, deployer);
+  const krystalVaultV3 = await deployKrystalVaultV3Contract(++step, existingContract, deployer);
+
+  const contracts: Contracts = {
+    poolOptimalSwapper: poolOptimalSwapper.poolOptimalSwapper,
+    krystalVaultV3: krystalVaultV3.krystalVaultV3,
   };
+
+  contracts.krystalVaultV3Factory = (
+    await deployKrystalVaultV3FactoryContract(++step, existingContract, deployer, undefined, contracts)
+  ).krystalVaultV3Factory;
+
+  return contracts;
 }
+
+export const deployPoolOptimalSwapperContract = async (
+  step: number,
+  existingContract: Record<string, any> | undefined,
+  deployer: string,
+  customNetworkConfig?: IConfig,
+): Promise<Contracts> => {
+  const config = { ...networkConfig, ...customNetworkConfig };
+
+  let poolOptimalSwapper;
+  if (config.poolOptimalSwapper?.enabled) {
+    poolOptimalSwapper = (await deployContract(
+      `${step} >>`,
+      config.poolOptimalSwapper?.autoVerifyContract,
+      "PoolOptimalSwapper",
+      existingContract?.["PoolOptimalSwapper"],
+      "contracts/PoolOptimalSwapper.sol:PoolOptimalSwapper",
+    )) as PoolOptimalSwapper;
+  }
+  return {
+    poolOptimalSwapper,
+  };
+};
 
 export const deployKrystalVaultV3Contract = async (
   step: number,
@@ -75,6 +108,7 @@ export const deployKrystalVaultV3FactoryContract = async (
   existingContract: Record<string, any> | undefined,
   deployer: string,
   customNetworkConfig?: IConfig,
+  contracts?: Contracts,
 ): Promise<Contracts> => {
   const config = { ...networkConfig, ...customNetworkConfig };
 
@@ -87,7 +121,11 @@ export const deployKrystalVaultV3FactoryContract = async (
       existingContract?.["krystalVaultV3Factory"],
       "contracts/KrystalVaultV3Factory.sol:KrystalVaultV3Factory",
       config.uniswapV3Factory,
-      existingContract?.["krystalVaultV3"],
+      existingContract?.["krystalVaultV3"] || contracts?.krystalVaultV3?.target,
+      existingContract?.["poolOptimalSwapper"] || contracts?.poolOptimalSwapper?.target,
+      config.platformFeeRecipient,
+      config.platformFeeBasisPoint,
+      config.ownerFeeBasisPoint,
     )) as KrystalVaultV3Factory;
   }
   return {

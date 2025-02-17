@@ -50,7 +50,7 @@ yarn test
 To deploy the contracts, use:
 
 ```sh
-yarn deploy
+yarn deploy -c base -n mainnet
 ```
 
 ## Deployment

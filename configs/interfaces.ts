@@ -1,6 +1,10 @@
 export interface IConfig {
   autoVerifyContract?: boolean;
   sleepTime?: number;
+  poolOptimalSwapper: {
+    enabled?: boolean;
+    autoVerifyContract?: boolean;
+  };
   krystalVaultV3: {
     enabled?: boolean;
     autoVerifyContract?: boolean;
@@ -9,13 +13,13 @@ export interface IConfig {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
-  // For proxy admin
-  proxyAdminMultisig?: string;
-  // For managing the config and admin jobs
-  adminMultisig?: string;
-  // For maintaining, minting and some executing jobs
-  maintainerMultisig?: string;
   uniswapV3Factory?: string;
+  // For platform fee recipient
+  platformFeeRecipient?: string;
+  // For platform fee in basis point
+  platformFeeBasisPoint?: number;
+  // For owner fee in basis point
+  ownerFeeBasisPoint?: number;
 }
 
 export interface ITestConfig {

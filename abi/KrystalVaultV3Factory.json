@@ -15,6 +15,21 @@
         "internalType": "address",
         "name": "optimalSwapperAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "platformFeeRecipientAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_platformFeeBasisPoint",
+        "type": "uint16"
+      },
+      {
+        "internalType": "uint16",
+        "name": "_ownerFeeBasisPoint",
+        "type": "uint16"
       }
     ],
     "stateMutability": "nonpayable",

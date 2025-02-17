@@ -1,1 +1,7 @@
-{}
+{
+  "base_mainnet": {
+    "poolOptimalSwapper": "0xD69dB44a0C679Bf8cde6741135eC19419924eD24",
+    "krystalVaultV3": "0x6eE7774c379d65Fb4f5CFDbb48B2c19E5cF6f325",
+    "krystalVaultV3Factory": "0x4EEA88F79bbaB9E135CC993f6e53b10734EFcD83"
+  }
+}

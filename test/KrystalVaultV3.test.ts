@@ -42,6 +42,9 @@ describe("KrystalVaultV3Factory", function () {
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
       optimalSwapper,
+      NetworkConfig.base_mainnet.platformFeeRecipient,
+      NetworkConfig.base_mainnet.platformFeeBasisPoint,
+      NetworkConfig.base_mainnet.ownerFeeBasisPoint,
     ]);
 
     await factory.waitForDeployment();
@@ -273,6 +276,9 @@ describe("KrystalVaultV3", function () {
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
       optimalSwapper,
+      NetworkConfig.base_mainnet.platformFeeRecipient,
+      NetworkConfig.base_mainnet.platformFeeBasisPoint,
+      NetworkConfig.base_mainnet.ownerFeeBasisPoint,
     ]);
 
     await factory.waitForDeployment();
