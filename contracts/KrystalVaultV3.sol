@@ -11,7 +11,6 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
-import "@uniswap/v3-core/contracts/interfaces/callback/IUniswapV3SwapCallback.sol";
 
 import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
@@ -20,18 +19,12 @@ import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 import { TernaryLib } from "@aperture_finance/uni-v3-lib/src/TernaryLib.sol";
 
 import "./interfaces/IKrystalVaultV3.sol";
-import { OptimalSwap, V3PoolCallee } from "./libraries/OptimalSwap.sol";
+import "./interfaces/IOptimalSwapper.sol";
 
 /// @title KrystalVaultV3
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
-contract KrystalVaultV3 is
-  AccessControlUpgradeable,
-  ERC20PermitUpgradeable,
-  ReentrancyGuard,
-  IKrystalVaultV3,
-  IUniswapV3SwapCallback
-{
+contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, ReentrancyGuard, IKrystalVaultV3 {
   bytes32 public constant ADMIN_ROLE_HASH = keccak256("ADMIN_ROLE");
 
   uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
@@ -44,6 +37,7 @@ contract KrystalVaultV3 is
 
   VaultState public state;
   VaultConfig public config;
+  IOptimalSwapper public optimalSwapper;
 
   constructor() {}
 
@@ -57,7 +51,11 @@ contract KrystalVaultV3 is
     address _pool,
     address _owner,
     string memory name,
-    string memory symbol
+    string memory symbol,
+    uint16 platformFeeBasisPoint,
+    address platformFeeRecipient,
+    uint16 ownerFeeBasisPoint,
+    address _optimalSwapper
   ) public initializer {
     require(_nfpm != address(0), ZeroAddress());
     require(_pool != address(0), ZeroAddress());
@@ -72,22 +70,26 @@ contract KrystalVaultV3 is
 
     vaultFactory = _msgSender();
 
-    // feeBasisPoints is in basis points (1% = 100 basis points)
-    config = VaultConfig({ mintCalled: false, feeBasisPoints: 100, maxTotalSupply: 0, feeRecipient: _owner });
-
-    IUniswapV3Pool pool = IUniswapV3Pool(_pool);
+    // platformFeeBasisPoint is in basis points (1% = 100 basis points)
+    config = VaultConfig({
+      platformFeeBasisPoint: platformFeeBasisPoint,
+      platformFeeRecipient: platformFeeRecipient,
+      ownerFeeBasisPoint: ownerFeeBasisPoint,
+      ownerFeeRecipient: _owner
+    });
 
     state = VaultState({
-      pool: pool,
+      pool: IUniswapV3Pool(_pool),
       nfpm: INonfungiblePositionManager(_nfpm),
-      token0: IERC20(pool.token0()),
-      token1: IERC20(pool.token1()),
+      token0: IERC20(IUniswapV3Pool(_pool).token0()),
+      token1: IERC20(IUniswapV3Pool(_pool).token1()),
       currentTokenId: 0,
       currentTickLower: 0,
       currentTickUpper: 0,
-      tickSpacing: pool.tickSpacing(),
-      fee: pool.fee()
+      tickSpacing: IUniswapV3Pool(_pool).tickSpacing(),
+      fee: IUniswapV3Pool(_pool).fee()
     });
+    optimalSwapper = IOptimalSwapper(_optimalSwapper);
   }
 
   modifier onlyVaultFactory() {
@@ -194,10 +196,6 @@ contract KrystalVaultV3 is
         deadline: block.timestamp
       });
     (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
-
-    uint256 totalAfterShares = total + shares;
-    require(config.maxTotalSupply == 0 || totalAfterShares <= config.maxTotalSupply, ExceededSupply());
-
     _mint(to, shares);
 
     emit VaultDeposit(to, shares, amount0Added, amount1Added);
@@ -371,17 +369,6 @@ contract KrystalVaultV3 is
     emit Compound(currentTick(), amount0Added, amount1Added, totalSupply());
   }
 
-  /// @notice Callback function required by Uniswap V3 to finalize swaps
-  function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external override {
-    require(_msgSender() == address(state.pool), Unauthorized());
-
-    if (amount0Delta > 0) {
-      IERC20(state.token0).transfer(_msgSender(), uint256(amount0Delta));
-    } else if (amount1Delta > 0) {
-      IERC20(state.token1).transfer(_msgSender(), uint256(amount1Delta));
-    }
-  }
-
   /// @notice Collect fees
   function _collectFees() internal returns (uint128 liquidity) {
     (liquidity, , ) = _position();
@@ -396,15 +383,24 @@ contract KrystalVaultV3 is
         })
       );
 
-      emit FeeCollected(config.feeBasisPoints, owed0, owed1);
-
-      uint256 feeAmount0 = (owed0 * config.feeBasisPoints) / 10000;
-      uint256 feeAmount1 = (owed1 * config.feeBasisPoints) / 10000;
+      uint256 feeAmount0 = (owed0 * config.platformFeeBasisPoint) / 10000;
+      uint256 feeAmount1 = (owed1 * config.platformFeeBasisPoint) / 10000;
 
       if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
-        state.token0.safeTransfer(config.feeRecipient, feeAmount0);
+        state.token0.safeTransfer(config.platformFeeRecipient, feeAmount0);
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
-        state.token1.safeTransfer(config.feeRecipient, feeAmount1);
+        state.token1.safeTransfer(config.platformFeeRecipient, feeAmount1);
+
+      emit FeeCollected(1, feeAmount0, feeAmount1);
+
+      feeAmount0 = (owed0 * config.ownerFeeBasisPoint) / 10000;
+      feeAmount1 = (owed1 * config.ownerFeeBasisPoint) / 10000;
+      if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
+        state.token0.safeTransfer(config.ownerFeeRecipient, feeAmount0);
+      if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
+        state.token1.safeTransfer(config.ownerFeeRecipient, feeAmount1);
+
+      emit FeeCollected(2, feeAmount0, feeAmount1);
     }
 
     return liquidity;
@@ -419,7 +415,6 @@ contract KrystalVaultV3 is
   function _mintLiquidity(
     INonfungiblePositionManager.MintParams memory params
   ) internal returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) {
-    config.mintCalled = true;
     params.recipient = address(this);
 
     state.token0.approve(address(state.nfpm), type(uint256).max);
@@ -545,29 +540,6 @@ contract KrystalVaultV3 is
       );
   }
 
-  /// @notice Get the liquidity amount of the given numbers of token0 and token1
-  /// @param tickLower The lower tick of the position
-  /// @param tickUpper The upper tick of the position
-  /// @param amount0 The amount of token0
-  /// @param amount1 The amount of token1
-  /// @return Amount of liquidity tokens
-  function _liquidityForAmounts(
-    int24 tickLower,
-    int24 tickUpper,
-    uint256 amount0,
-    uint256 amount1
-  ) internal view returns (uint128) {
-    (uint160 sqrtRatioX96, , , , , , ) = state.pool.slot0();
-    return
-      LiquidityAmounts.getLiquidityForAmounts(
-        sqrtRatioX96,
-        TickMath.getSqrtRatioAtTick(tickLower),
-        TickMath.getSqrtRatioAtTick(tickUpper),
-        amount0,
-        amount1
-      );
-  }
-
   /// @notice Get the current price tick of the Uniswap pool
   /// @return tick Uniswap pool's current price tick
   function currentTick() public view override returns (int24 tick) {
@@ -576,74 +548,17 @@ contract KrystalVaultV3 is
     return tick;
   }
 
-  /// @notice Set the fee basis points for the vault
-  /// @param newFeeBasisPoints The new fee basis points to be set
-  function setFee(uint8 newFeeBasisPoints) external override onlyRole(DEFAULT_ADMIN_ROLE) {
-    config.feeBasisPoints = newFeeBasisPoints;
-
-    emit SetFee(config.feeBasisPoints);
-  }
-
-  /// @dev Make a direct `exactIn` pool swap
-  /// @param pool The address of the pool
-  /// @param amountIn The amount of token to be swapped
-  /// @param zeroForOne The direction of the swap, true for token0 to token1, false for token1 to token0
-  /// @return amountOut The amount of token received after swap
-  function _poolSwap(address pool, uint256 amountIn, bool zeroForOne) internal returns (uint256 amountOut) {
-    if (amountIn != 0) {
-      uint160 sqrtPriceLimitX96;
-      // Equivalent to `sqrtPriceLimitX96 = zeroForOne ? MIN_SQRT_RATIO + 1 : MAX_SQRT_RATIO - 1`
-      assembly {
-        sqrtPriceLimitX96 := xor(MAX_SQRT_RATIO_LESS_ONE, mul(XOR_SQRT_RATIO, zeroForOne))
-      }
-      (int256 amount0Delta, int256 amount1Delta) = V3PoolCallee.wrap(pool).swap(
-        address(this),
-        zeroForOne,
-        int256(amountIn),
-        sqrtPriceLimitX96,
-        ""
-      );
-      unchecked {
-        amountOut = 0 - zeroForOne.ternary(uint256(amount1Delta), uint256(amount0Delta));
-      }
-    }
-  }
-
   /// @dev Swap tokens to the optimal ratio to add liquidity in the same pool
   /// @param tickLower The lower tick of the position
   /// @param tickUpper The upper tick of the position
   function _optimalSwap(int24 tickLower, int24 tickUpper) internal {
     // swap tokens to the optimal ratio to add liquidity in the same pool
-    IERC20 token0 = state.token0;
-    IERC20 token1 = state.token1;
-    address pool = address(state.pool);
-    unchecked {
-      uint256 balance0 = token0.balanceOf(address(this));
-      uint256 balance1 = token1.balanceOf(address(this));
-      uint256 amountIn;
-      uint256 amountOut;
-      bool zeroForOne;
-      {
-        uint256 amount0Desired = balance0;
-        uint256 amount1Desired = balance1;
-        (amountIn, , zeroForOne, ) = OptimalSwap.getOptimalSwap(
-          V3PoolCallee.wrap(pool),
-          tickLower,
-          tickUpper,
-          amount0Desired,
-          amount1Desired
-        );
-        amountOut = _poolSwap(pool, amountIn, zeroForOne);
-      }
-      // balance0 = balance0 + zeroForOne ? - amountIn : amountOut
-      // balance1 = balance1 + zeroForOne ? amountOut : - amountIn
-      assembly {
-        let minusAmountIn := sub(0, amountIn)
-        let diff := mul(xor(amountOut, minusAmountIn), zeroForOne)
-        balance0 := add(balance0, xor(amountOut, diff))
-        balance1 := add(balance1, xor(minusAmountIn, diff))
-      }
-    }
+    uint256 amount0Desired = IERC20(state.token0).balanceOf(address(this));
+    uint256 amount1Desired = IERC20(state.token1).balanceOf(address(this));
+    state.token0.approve(address(optimalSwapper), type(uint256).max);
+    state.token1.approve(address(optimalSwapper), type(uint256).max);
+
+    optimalSwapper.optimalSwap(address(state.pool), amount0Desired, amount1Desired, tickLower, tickUpper, "");
   }
 
   /// @notice grant admin role to the address

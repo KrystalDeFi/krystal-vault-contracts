@@ -23,12 +23,22 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
   mapping(address => Vault[]) public vaultsByAddress;
 
   address[] public allVaults;
+  address public platformFeeRecipient;
+  uint16 public platformFeeBasisPoint;
+  uint16 public ownerFeeBasisPoint;
+  address public optimalSwapper;
 
-  constructor(address uniswapV3FactoryAddress, address krystalVaultV3ImplementationAddress) Ownable(_msgSender()) {
+  constructor(
+    address uniswapV3FactoryAddress,
+    address krystalVaultV3ImplementationAddress,
+    address optimalSwapperAddress
+  ) Ownable(_msgSender()) {
     require(uniswapV3FactoryAddress != address(0), ZeroAddress());
     require(krystalVaultV3ImplementationAddress != address(0), ZeroAddress());
+    require(optimalSwapperAddress != address(0), ZeroAddress());
     uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
     krystalVaultV3Implementation = krystalVaultV3ImplementationAddress;
+    optimalSwapper = optimalSwapperAddress;
   }
 
   /// @notice Create a KrystalVaultV3
@@ -64,7 +74,17 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
     krystalVaultV3 = Clones.clone(krystalVaultV3Implementation);
     KrystalVaultV3 vault = KrystalVaultV3(krystalVaultV3);
 
-    vault.initialize(nfpm, pool, _msgSender(), name, symbol);
+    vault.initialize(
+      nfpm,
+      pool,
+      _msgSender(),
+      name,
+      symbol,
+      platformFeeBasisPoint,
+      platformFeeRecipient,
+      ownerFeeBasisPoint,
+      optimalSwapper
+    );
 
     IERC20(token0).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount0Desired);
     IERC20(token1).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount1Desired);
@@ -85,5 +105,17 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
 
   function unpause() public onlyOwner {
     _unpause();
+  }
+
+  function setPlatformFeeRecipient(address _platformFeeRecipient) public onlyOwner {
+    platformFeeRecipient = _platformFeeRecipient;
+  }
+
+  function setPlatformFeeBasisPoint(uint16 _platformFeeBasisPoint) public onlyOwner {
+    platformFeeBasisPoint = _platformFeeBasisPoint;
+  }
+
+  function setOwnerFeeBasisPoint(uint16 _ownerFeeBasisPoint) public onlyOwner {
+    ownerFeeBasisPoint = _ownerFeeBasisPoint;
   }
 }

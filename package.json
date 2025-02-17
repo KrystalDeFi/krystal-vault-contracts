@@ -6,6 +6,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "compile": "hardhat compile",
+    "size": "hardhat size-contracts",
     "test": "hardhat test && hardhat coverage",
     "deploy": "./cmd.sh -x deploy",
     "verify": "hardhat verify --network",
@@ -56,6 +57,7 @@
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
     "fs-extra": "^7.0.1",
+    "hardhat-contract-sizer": "^2.10.0",
     "lodash": "^4.17.21",
     "mocha": "^11.1.0",
     "prettier": "^3.4.2",

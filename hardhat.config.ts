@@ -4,6 +4,7 @@ import "hardhat-abi-exporter";
 
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/types/config";
+import "hardhat-contract-sizer";
 
 dotenv.config({
   path: "./.env",

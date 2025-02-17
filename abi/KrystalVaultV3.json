@@ -238,11 +238,6 @@
   },
   {
     "inputs": [],
-    "name": "Invalid_Tick_Range",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "NotInitializing",
     "type": "error"
   },
@@ -286,37 +281,6 @@
     "inputs": [],
     "name": "ZeroAmount",
     "type": "error"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickLower",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickUpper",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount0",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount1",
-        "type": "uint256"
-      }
-    ],
-    "name": "AddLiquidity",
-    "type": "event"
   },
   {
     "anonymous": false,
@@ -386,7 +350,7 @@
       {
         "indexed": false,
         "internalType": "uint8",
-        "name": "fee",
+        "name": "feeType",
         "type": "uint8"
       },
       {
@@ -491,32 +455,6 @@
       }
     ],
     "name": "RoleRevoked",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "newFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "SetFee",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_address",
-        "type": "address"
-      }
-    ],
-    "name": "SetWhitelist",
     "type": "event"
   },
   {
@@ -840,23 +778,23 @@
     "name": "config",
     "outputs": [
       {
-        "internalType": "bool",
-        "name": "mintCalled",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint8",
-        "name": "feeBasisPoints",
-        "type": "uint8"
-      },
-      {
-        "internalType": "uint256",
-        "name": "maxTotalSupply",
-        "type": "uint256"
+        "internalType": "uint16",
+        "name": "platformFeeBasisPoint",
+        "type": "uint16"
       },
       {
         "internalType": "address",
-        "name": "feeRecipient",
+        "name": "platformFeeRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "ownerFeeBasisPoint",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "ownerFeeRecipient",
         "type": "address"
       }
     ],
@@ -1135,6 +1073,26 @@
         "internalType": "string",
         "name": "symbol",
         "type": "string"
+      },
+      {
+        "internalType": "uint16",
+        "name": "platformFeeBasisPoint",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "platformFeeRecipient",
+        "type": "address"
+      },
+      {
+        "internalType": "uint16",
+        "name": "ownerFeeBasisPoint",
+        "type": "uint16"
+      },
+      {
+        "internalType": "address",
+        "name": "_optimalSwapper",
+        "type": "address"
       }
     ],
     "name": "initialize",
@@ -1223,6 +1181,19 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "optimalSwapper",
+    "outputs": [
+      {
+        "internalType": "contract IOptimalSwapper",
+        "name": "",
+        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1354,19 +1325,6 @@
       }
     ],
     "name": "revokeRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "newFeeBasisPoints",
-        "type": "uint8"
-      }
-    ],
-    "name": "setFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -1519,29 +1477,6 @@
         "type": "bool"
       }
     ],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "int256",
-        "name": "amount0Delta",
-        "type": "int256"
-      },
-      {
-        "internalType": "int256",
-        "name": "amount1Delta",
-        "type": "int256"
-      },
-      {
-        "internalType": "bytes",
-        "name": "",
-        "type": "bytes"
-      }
-    ],
-    "name": "uniswapV3SwapCallback",
-    "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
   },

@@ -10,6 +10,11 @@
         "internalType": "address",
         "name": "krystalVaultV3ImplementationAddress",
         "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "optimalSwapperAddress",
+        "type": "address"
       }
     ],
     "stateMutability": "nonpayable",
@@ -413,12 +418,38 @@
   },
   {
     "inputs": [],
+    "name": "optimalSwapper",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "owner",
     "outputs": [
       {
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "ownerFeeBasisPoint",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
       }
     ],
     "stateMutability": "view",
@@ -446,7 +477,72 @@
   },
   {
     "inputs": [],
+    "name": "platformFeeBasisPoint",
+    "outputs": [
+      {
+        "internalType": "uint16",
+        "name": "",
+        "type": "uint16"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "platformFeeRecipient",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "renounceOwnership",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_ownerFeeBasisPoint",
+        "type": "uint16"
+      }
+    ],
+    "name": "setOwnerFeeBasisPoint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_platformFeeBasisPoint",
+        "type": "uint16"
+      }
+    ],
+    "name": "setPlatformFeeBasisPoint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_platformFeeRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "setPlatformFeeRecipient",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

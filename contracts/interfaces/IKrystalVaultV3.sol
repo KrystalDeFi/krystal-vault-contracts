@@ -22,10 +22,10 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   }
 
   struct VaultConfig {
-    bool mintCalled;
-    uint8 feeBasisPoints;
-    uint256 maxTotalSupply;
-    address feeRecipient;
+    uint16 platformFeeBasisPoint;
+    address platformFeeRecipient;
+    uint16 ownerFeeBasisPoint;
+    address ownerFeeRecipient;
   }
 
   event VaultPositionMint(uint256 indexed tokenId);
@@ -54,13 +54,7 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
 
   event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);
 
-  event AddLiquidity(int24 tickLower, int24 tickUpper, uint256 amount0, uint256 amount1);
-
-  event FeeCollected(uint8 fee, uint256 fees0, uint256 fees1);
-
-  event SetWhitelist(address indexed _address);
-
-  event SetFee(uint8 newFee);
+  event FeeCollected(uint8 feeType, uint256 fees0, uint256 fees1);
 
   function mintPosition(
     address owner,
@@ -103,8 +97,6 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
   function getBasePosition() external view returns (uint128 liquidity, uint256 amount0, uint256 amount1);
 
   function currentTick() external view returns (int24 tick);
-
-  function setFee(uint8 newFee) external;
 
   function grantAdminRole(address _address) external;
 

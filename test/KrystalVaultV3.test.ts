@@ -35,9 +35,13 @@ describe("KrystalVaultV3Factory", function () {
     const implementationAddress = await implementation.getAddress();
     console.log("implementation deployed at: ", implementationAddress);
 
+    const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
+    await optimalSwapper.waitForDeployment();
+
     factory = await ethers.deployContract("KrystalVaultV3Factory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
+      optimalSwapper,
     ]);
 
     await factory.waitForDeployment();
@@ -262,9 +266,13 @@ describe("KrystalVaultV3", function () {
     const implementationAddress = await implementation.getAddress();
     console.log("implementation deployed at: ", implementationAddress);
 
+    const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
+    await optimalSwapper.waitForDeployment();
+
     const factory = await ethers.deployContract("KrystalVaultV3Factory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
+      optimalSwapper,
     ]);
 
     await factory.waitForDeployment();
@@ -419,6 +427,8 @@ describe("KrystalVaultV3", function () {
     expect(state.currentTickUpper).to.equal(600);
     const pos = await aliceVaultContract.getBasePosition();
     console.log(pos);
+    expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
+    expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
     console.log(await token0.balanceOf(aliceVaultContract));
     console.log(await token1.balanceOf(aliceVaultContract));
   });
@@ -449,13 +459,13 @@ describe("KrystalVaultV3", function () {
     const totalSupply = await aliceVaultContract.totalSupply();
     expect(totalSupply).to.be.gt(0);
   });
-  it ("Should exit and allow other to withdraw", async() => {
+  it("Should exit and allow other to withdraw", async () => {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
 
     await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
     await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
-   
+
     // deposit to bob
     await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, bob.address);
     const bobBalance = await aliceVaultContract.balanceOf(bob.address);
@@ -472,7 +482,9 @@ describe("KrystalVaultV3", function () {
     console.log("alice token0 withdrawn: ", aliceBalance0After - aliceBalance0Before);
     console.log("alice token1 withdrawn: ", aliceBalance1After - aliceBalance1Before);
 
-    await expect(aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address)).to.be.revertedWithCustomError(aliceVaultContract, "InvalidPosition");
+    await expect(
+      aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address),
+    ).to.be.revertedWithCustomError(aliceVaultContract, "InvalidPosition");
 
     const bobBalance0Before = await token0.balanceOf(bob.address);
     const bobBalance1Before = await token1.balanceOf(bob.address);
@@ -506,11 +518,6 @@ describe("KrystalVaultV3", function () {
     );
 
     await expect(aliceVaultContract.connect(bob).compound(0, 0)).to.be.revertedWithCustomError(
-      aliceVaultContract,
-      "AccessControlUnauthorizedAccount",
-    );
-
-    await expect(aliceVaultContract.connect(bob).setFee(0)).to.be.revertedWithCustomError(
       aliceVaultContract,
       "AccessControlUnauthorizedAccount",
     );

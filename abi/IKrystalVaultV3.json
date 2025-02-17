@@ -75,37 +75,6 @@
       {
         "indexed": false,
         "internalType": "int24",
-        "name": "tickLower",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tickUpper",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount0",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount1",
-        "type": "uint256"
-      }
-    ],
-    "name": "AddLiquidity",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "int24",
         "name": "tick",
         "type": "int24"
       },
@@ -137,7 +106,7 @@
       {
         "indexed": false,
         "internalType": "uint8",
-        "name": "fee",
+        "name": "feeType",
         "type": "uint8"
       },
       {
@@ -154,32 +123,6 @@
       }
     ],
     "name": "FeeCollected",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint8",
-        "name": "newFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "SetFee",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "_address",
-        "type": "address"
-      }
-    ],
-    "name": "SetWhitelist",
     "type": "event"
   },
   {
@@ -597,19 +540,6 @@
       }
     ],
     "name": "revokeAdminRole",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint8",
-        "name": "newFee",
-        "type": "uint8"
-      }
-    ],
-    "name": "setFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
