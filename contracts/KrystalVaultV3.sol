@@ -220,17 +220,15 @@ contract KrystalVaultV3 is
     require(shares > 0, InvalidShares());
     require(to != address(0), ZeroAddress());
 
-    /// update fees
-    _collectFees();
+    uint256 base0;
+    uint256 base1;
+    if (state.currentTokenId != 0) {
+      /// update fees
+      _collectFees();
 
-    /// Withdraw liquidity from Uniswap pool
-    (uint256 base0, uint256 base1) = _decreaseLiquidityAndCollectFees(
-      _liquidityForShares(shares),
-      to,
-      false,
-      amount0Min,
-      amount1Min
-    );
+      /// Withdraw liquidity from Uniswap pool
+      (base0, base1) = _decreaseLiquidityAndCollectFees(_liquidityForShares(shares), to, false, amount0Min, amount1Min);
+    }
 
     // Push tokens proportional to unused balances
     uint256 unusedAmount0 = FullMath.mulDiv(state.token0.balanceOf(address(this)), shares, totalSupply());

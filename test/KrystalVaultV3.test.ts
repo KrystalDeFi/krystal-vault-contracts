@@ -449,6 +449,41 @@ describe("KrystalVaultV3", function () {
     const totalSupply = await aliceVaultContract.totalSupply();
     expect(totalSupply).to.be.gt(0);
   });
+  it ("Should exit and allow other to withdraw", async() => {
+    const amount0Desired = parseEther("1");
+    const amount1Desired = parseEther("1");
+
+    await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+   
+    // deposit to bob
+    await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, bob.address);
+    const bobBalance = await aliceVaultContract.balanceOf(bob.address);
+    expect(bobBalance).to.be.gt(0);
+    console.log("bob shares: ", bobBalance.toString());
+    const aliceBalance0Before = await token0.balanceOf(alice.address);
+    const aliceBalance1Before = await token1.balanceOf(alice.address);
+    // alice exit position
+    await aliceVaultContract.exit(alice.address, 0, 0);
+    const aliceBalance0After = await token0.balanceOf(alice.address);
+    const aliceBalance1After = await token1.balanceOf(alice.address);
+    expect(aliceBalance0After - aliceBalance0Before).to.be.gt(0);
+    expect(aliceBalance1After - aliceBalance1Before).to.be.gt(0);
+    console.log("alice token0 withdrawn: ", aliceBalance0After - aliceBalance0Before);
+    console.log("alice token1 withdrawn: ", aliceBalance1After - aliceBalance1Before);
+
+    await expect(aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address)).to.be.revertedWithCustomError(aliceVaultContract, "InvalidPosition");
+
+    const bobBalance0Before = await token0.balanceOf(bob.address);
+    const bobBalance1Before = await token1.balanceOf(bob.address);
+    await aliceVaultContract.connect(bob).withdraw(bobBalance, bob, 0, 0);
+    const bobBalance0After = await token0.balanceOf(bob.address);
+    const bobBalance1After = await token1.balanceOf(bob.address);
+    expect(bobBalance0After - bobBalance0Before).to.be.gt(0);
+    expect(bobBalance1After - bobBalance1Before).to.be.gt(0);
+    console.log("bob token0 withdrawn: ", bobBalance0After - bobBalance0Before);
+    console.log("bob token1 withdrawn: ", bobBalance1After - bobBalance1Before);
+  });
 
   ////// Error Path
   it("Should not available to mint position again", async () => {
