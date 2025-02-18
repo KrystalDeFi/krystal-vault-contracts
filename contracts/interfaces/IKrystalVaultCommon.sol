@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.28;
 
-interface IKrystalVaultV3Common {
+interface IKrystalVaultCommon {
   error ZeroAddress();
 
   error ZeroAmount();

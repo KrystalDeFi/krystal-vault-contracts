@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
-import "./IKrystalVaultV3Common.sol";
+import "./IKrystalVaultCommon.sol";
 
-interface IKrystalVaultV3 is IKrystalVaultV3Common {
+interface IKrystalVault is IKrystalVaultCommon {
   struct VaultState {
     IUniswapV3Pool pool;
     INonfungiblePositionManager nfpm;
@@ -28,7 +28,7 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     address ownerFeeRecipient;
   }
 
-  event VaultPositionMint(uint256 indexed tokenId);
+  event VaultPositionMint(address indexed nfpm, uint256 indexed tokenId);
 
   event VaultDeposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
 
@@ -43,18 +43,18 @@ interface IKrystalVaultV3 is IKrystalVaultV3Common {
     uint256 tokenId
   );
 
-  event VaultRebalance(
-    int24 tick,
-    uint256 totalAmount0,
-    uint256 totalAmount1,
-    uint256 feeAmount0,
-    uint256 feeAmount1,
-    uint256 totalSupply
+  event ChangeRange(
+    address indexed nfpm,
+    uint256 indexed oldTokenId,
+    uint256 newTokenId,
+    uint256 liquidity,
+    uint256 amount0Added,
+    uint256 amount1Added
   );
 
   event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);
 
-  event FeeCollected(uint8 feeType, uint256 fees0, uint256 fees1);
+  event FeeCollected(address indexed recipient, uint8 feeType, uint256 fees0, uint256 fees1);
 
   function mintPosition(
     address owner,

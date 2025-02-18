@@ -4,19 +4,19 @@ pragma solidity ^0.8.28;
 
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
-import "./IKrystalVaultV3Common.sol";
+import "./IKrystalVaultCommon.sol";
 
-interface IKrystalVaultV3Factory is IKrystalVaultV3Common {
+interface IKrystalVaultFactory is IKrystalVaultCommon {
   struct Vault {
     address owner;
-    address krystalVaultV3;
+    address krystalVault;
     address nfpm;
     INonfungiblePositionManager.MintParams params;
   }
 
   event VaultCreated(
     address indexed owner,
-    address indexed krystalVaultV3,
+    address indexed krystalVault,
     address nfpm,
     INonfungiblePositionManager.MintParams params,
     uint256 vaultsLength
@@ -27,5 +27,5 @@ interface IKrystalVaultV3Factory is IKrystalVaultV3Common {
     INonfungiblePositionManager.MintParams memory params,
     string memory name,
     string memory symbol
-  ) external returns (address krystalVaultV3);
+  ) external returns (address krystalVault);
 }

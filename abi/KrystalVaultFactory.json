@@ -8,7 +8,7 @@
       },
       {
         "internalType": "address",
-        "name": "krystalVaultV3ImplementationAddress",
+        "name": "krystalVaultImplementationAddress",
         "type": "address"
       },
       {
@@ -226,7 +226,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "krystalVaultV3",
+        "name": "krystalVault",
         "type": "address"
       },
       {
@@ -411,7 +411,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "krystalVaultV3",
+        "name": "krystalVault",
         "type": "address"
       }
     ],
@@ -420,7 +420,7 @@
   },
   {
     "inputs": [],
-    "name": "krystalVaultV3Implementation",
+    "name": "krystalVaultImplementation",
     "outputs": [
       {
         "internalType": "address",
@@ -429,6 +429,25 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "data",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "multicall",
+    "outputs": [
+      {
+        "internalType": "bytes[]",
+        "name": "results",
+        "type": "bytes[]"
+      }
+    ],
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -617,7 +636,7 @@
       },
       {
         "internalType": "address",
-        "name": "krystalVaultV3",
+        "name": "krystalVault",
         "type": "address"
       },
       {

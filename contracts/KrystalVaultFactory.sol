@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import { IMulticall } from "@uniswap/v3-periphery/contracts/interfaces/IMulticall.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -10,15 +11,15 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
-import { KrystalVaultV3 } from "./KrystalVaultV3.sol";
+import { KrystalVault } from "./KrystalVault.sol";
 
-import "./interfaces/IKrystalVaultV3Factory.sol";
+import "./interfaces/IKrystalVaultFactory.sol";
 
-/// @title KrystalVaultV3Factory
-contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
+/// @title KrystalVaultFactory
+contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMulticall {
   using SafeERC20 for IERC20;
   IUniswapV3Factory public uniswapV3Factory;
-  address public krystalVaultV3Implementation;
+  address public krystalVaultImplementation;
 
   mapping(address => Vault[]) public vaultsByAddress;
 
@@ -30,36 +31,36 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
 
   constructor(
     address uniswapV3FactoryAddress,
-    address krystalVaultV3ImplementationAddress,
+    address krystalVaultImplementationAddress,
     address optimalSwapperAddress,
     address platformFeeRecipientAddress,
     uint16 _platformFeeBasisPoint,
     uint16 _ownerFeeBasisPoint
   ) Ownable(_msgSender()) {
     require(uniswapV3FactoryAddress != address(0), ZeroAddress());
-    require(krystalVaultV3ImplementationAddress != address(0), ZeroAddress());
+    require(krystalVaultImplementationAddress != address(0), ZeroAddress());
     require(optimalSwapperAddress != address(0), ZeroAddress());
     require(platformFeeRecipientAddress != address(0), ZeroAddress());
     uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
-    krystalVaultV3Implementation = krystalVaultV3ImplementationAddress;
+    krystalVaultImplementation = krystalVaultImplementationAddress;
     optimalSwapper = optimalSwapperAddress;
     platformFeeRecipient = platformFeeRecipientAddress;
     platformFeeBasisPoint = _platformFeeBasisPoint;
     ownerFeeBasisPoint = _ownerFeeBasisPoint;
   }
 
-  /// @notice Create a KrystalVaultV3
+  /// @notice Create a KrystalVault
   /// @param nfpm Address of INonfungiblePositionManager
   /// @param params MintParams of INonfungiblePositionManager
-  /// @param name Name of the KrystalVaultV3
-  /// @param symbol Symbol of the KrystalVaultV3
-  /// @return krystalVaultV3 Address of KrystalVaultV3 created
+  /// @param name Name of the KrystalVault
+  /// @param symbol Symbol of the KrystalVault
+  /// @return krystalVault Address of KrystalVault created
   function createVault(
     address nfpm,
     INonfungiblePositionManager.MintParams memory params,
     string memory name,
     string memory symbol
-  ) external override whenNotPaused returns (address krystalVaultV3) {
+  ) external override whenNotPaused returns (address krystalVault) {
     require(params.token0 != params.token1, IdenticalAddresses());
 
     (address token0, address token1) = params.token0 < params.token1
@@ -78,8 +79,8 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
       revert PoolNotFound();
     }
 
-    krystalVaultV3 = Clones.clone(krystalVaultV3Implementation);
-    KrystalVaultV3 vault = KrystalVaultV3(krystalVaultV3);
+    krystalVault = Clones.clone(krystalVaultImplementation);
+    KrystalVault vault = KrystalVault(krystalVault);
 
     vault.initialize(
       nfpm,
@@ -93,17 +94,17 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
       optimalSwapper
     );
 
-    IERC20(token0).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount0Desired);
-    IERC20(token1).safeTransferFrom(_msgSender(), krystalVaultV3, params.amount1Desired);
+    IERC20(token0).safeTransferFrom(_msgSender(), krystalVault, params.amount0Desired);
+    IERC20(token1).safeTransferFrom(_msgSender(), krystalVault, params.amount1Desired);
 
     vault.mintPosition(_msgSender(), params.tickLower, params.tickUpper, params.amount0Min, params.amount1Min);
 
-    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVaultV3, nfpm, params));
-    allVaults.push(krystalVaultV3);
+    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVault, nfpm, params));
+    allVaults.push(krystalVault);
 
-    emit VaultCreated(_msgSender(), krystalVaultV3, nfpm, params, allVaults.length);
+    emit VaultCreated(_msgSender(), krystalVault, nfpm, params, allVaults.length);
 
-    return krystalVaultV3;
+    return krystalVault;
   }
 
   function pause() public onlyOwner {
@@ -124,5 +125,24 @@ contract KrystalVaultV3Factory is Ownable, Pausable, IKrystalVaultV3Factory {
 
   function setOwnerFeeBasisPoint(uint16 _ownerFeeBasisPoint) public onlyOwner {
     ownerFeeBasisPoint = _ownerFeeBasisPoint;
+  }
+
+  /// @inheritdoc IMulticall
+  function multicall(bytes[] calldata data) public payable override returns (bytes[] memory results) {
+    results = new bytes[](data.length);
+    for (uint256 i = 0; i < data.length; i++) {
+      (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+
+      if (!success) {
+        // Next 5 lines from https://ethereum.stackexchange.com/a/83577
+        if (result.length < 68) revert();
+        assembly {
+          result := add(result, 0x04)
+        }
+        revert(abi.decode(result, (string)));
+      }
+
+      results[i] = result;
+    }
   }
 }

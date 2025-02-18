@@ -16,13 +16,13 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
-import "./interfaces/IKrystalVaultV3.sol";
+import "./interfaces/IKrystalVault.sol";
 import "./interfaces/IOptimalSwapper.sol";
 
-/// @title KrystalVaultV3
+/// @title KrystalVault
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
-contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, ReentrancyGuard, IKrystalVaultV3 {
+contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, ReentrancyGuard, IKrystalVault {
   bytes32 public constant ADMIN_ROLE_HASH = keccak256("ADMIN_ROLE");
 
   uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
@@ -40,9 +40,9 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
 
   /// @param _nfpm Uniswap V3 nonfungible position manager address
   /// @param _pool Uniswap V3 pool address
-  /// @param _owner Owner of the KrystalVaultV3
-  /// @param name Name of the KrystalVaultV3
-  /// @param symbol Symbol of the KrystalVaultV3
+  /// @param _owner Owner of the KrystalVault
+  /// @param name Name of the KrystalVault
+  /// @param symbol Symbol of the KrystalVault
   function initialize(
     address _nfpm,
     address _pool,
@@ -309,25 +309,18 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
     _collectFees();
 
     /// Withdraw all liquidity and collect all fees from Uniswap pool
-    (uint128 baseLiquidity, uint256 feesBase0, uint256 feesBase1) = _position();
+    (uint128 baseLiquidity, , ) = _position();
 
     _decreaseLiquidityAndCollectFees(baseLiquidity, address(this), true, decreasedAmount0Min, decreasedAmount1Min);
 
-    emit VaultRebalance(
-      currentTick(),
-      state.token0.balanceOf(address(this)),
-      state.token1.balanceOf(address(this)),
-      feesBase0,
-      feesBase1,
-      totalSupply()
-    );
+    uint256 oldTokenId = state.currentTokenId;
 
     state.currentTickLower = _newTickLower;
     state.currentTickUpper = _newTickUpper;
     // optimally swap tokens
     _optimalSwap(_newTickLower, _newTickUpper);
 
-    _mintLiquidity(
+    (, uint128 liquidity, uint256 amount0, uint256 amount1) = _mintLiquidity(
       INonfungiblePositionManager.MintParams({
         token0: address(state.token0),
         token1: address(state.token1),
@@ -342,6 +335,8 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
         deadline: block.timestamp
       })
     );
+
+    emit ChangeRange(address(state.nfpm), oldTokenId, state.currentTokenId, liquidity, amount0, amount1);
   }
 
   /// @notice Compound fees
@@ -389,7 +384,7 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(config.platformFeeRecipient, feeAmount1);
 
-      emit FeeCollected(1, feeAmount0, feeAmount1);
+      emit FeeCollected(config.platformFeeRecipient, 1, feeAmount0, feeAmount1);
 
       feeAmount0 = (owed0 * config.ownerFeeBasisPoint) / 10000;
       feeAmount1 = (owed1 * config.ownerFeeBasisPoint) / 10000;
@@ -398,7 +393,7 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(config.ownerFeeRecipient, feeAmount1);
 
-      emit FeeCollected(2, feeAmount0, feeAmount1);
+      emit FeeCollected(config.ownerFeeRecipient, 2, feeAmount0, feeAmount1);
     }
 
     return liquidity;
@@ -421,7 +416,7 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
     (tokenId, liquidity, amount0, amount1) = state.nfpm.mint(params);
 
     state.currentTokenId = tokenId;
-    emit VaultPositionMint(tokenId);
+    emit VaultPositionMint(address(state.nfpm), tokenId);
 
     return (tokenId, liquidity, amount0, amount1);
   }
@@ -491,9 +486,9 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
     return (liquidity, tokensOwed0, tokensOwed1);
   }
 
-  /// @notice Get the total amounts of token0 and token1 in the KrystalVaultV3
-  /// @return total0 Quantity of token0 in both positions and unused in the KrystalVaultV3
-  /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
+  /// @notice Get the total amounts of token0 and token1 in the KrystalVault
+  /// @return total0 Quantity of token0 in both positions and unused in the KrystalVault
+  /// @return total1 Quantity of token1 in both positions and unused in the KrystalVault
   function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
     (, uint256 base0, uint256 base1) = getBasePosition();
     total0 = state.token0.balanceOf(address(this)) + base0;
