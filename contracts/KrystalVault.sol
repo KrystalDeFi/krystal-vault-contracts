@@ -384,7 +384,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(config.platformFeeRecipient, feeAmount1);
 
-      emit FeeCollected(1, feeAmount0, feeAmount1);
+      emit FeeCollected(config.platformFeeRecipient, 1, feeAmount0, feeAmount1);
 
       feeAmount0 = (owed0 * config.ownerFeeBasisPoint) / 10000;
       feeAmount1 = (owed1 * config.ownerFeeBasisPoint) / 10000;
@@ -393,7 +393,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(config.ownerFeeRecipient, feeAmount1);
 
-      emit FeeCollected(2, feeAmount0, feeAmount1);
+      emit FeeCollected(config.ownerFeeRecipient, 2, feeAmount0, feeAmount1);
     }
 
     return liquidity;

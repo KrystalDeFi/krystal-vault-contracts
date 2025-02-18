@@ -54,7 +54,7 @@ interface IKrystalVault is IKrystalVaultCommon {
 
   event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);
 
-  event FeeCollected(uint8 feeType, uint256 fees0, uint256 fees1);
+  event FeeCollected(address indexed recipient, uint8 feeType, uint256 fees0, uint256 fees1);
 
   function mintPosition(
     address owner,
