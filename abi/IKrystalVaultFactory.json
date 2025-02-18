@@ -31,6 +31,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidOwnerFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidPosition",
     "type": "error"
   },
@@ -231,6 +236,11 @@
         "internalType": "struct INonfungiblePositionManager.MintParams",
         "name": "params",
         "type": "tuple"
+      },
+      {
+        "internalType": "uint16",
+        "name": "ownerFeeBasisPoint",
+        "type": "uint16"
       },
       {
         "internalType": "string",

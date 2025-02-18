@@ -21,13 +21,6 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint24 fee;
   }
 
-  struct VaultConfig {
-    uint16 platformFeeBasisPoint;
-    address platformFeeRecipient;
-    uint16 ownerFeeBasisPoint;
-    address ownerFeeRecipient;
-  }
-
   event VaultPositionMint(address indexed nfpm, uint256 indexed tokenId);
 
   event VaultDeposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);

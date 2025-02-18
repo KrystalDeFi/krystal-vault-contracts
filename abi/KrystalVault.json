@@ -218,6 +218,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidOwnerFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidPosition",
     "type": "error"
   },
@@ -803,11 +808,6 @@
         "internalType": "uint16",
         "name": "ownerFeeBasisPoint",
         "type": "uint16"
-      },
-      {
-        "internalType": "address",
-        "name": "ownerFeeRecipient",
-        "type": "address"
       }
     ],
     "stateMutability": "view",
@@ -1090,6 +1090,28 @@
         "type": "address"
       },
       {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "platformFeeBasisPoint",
+            "type": "uint16"
+          },
+          {
+            "internalType": "address",
+            "name": "platformFeeRecipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16",
+            "name": "ownerFeeBasisPoint",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct IKrystalVaultCommon.VaultConfig",
+        "name": "_config",
+        "type": "tuple"
+      },
+      {
         "internalType": "string",
         "name": "name",
         "type": "string"
@@ -1100,23 +1122,13 @@
         "type": "string"
       },
       {
-        "internalType": "uint16",
-        "name": "platformFeeBasisPoint",
-        "type": "uint16"
-      },
-      {
         "internalType": "address",
-        "name": "platformFeeRecipient",
+        "name": "_optimalSwapper",
         "type": "address"
       },
       {
-        "internalType": "uint16",
-        "name": "ownerFeeBasisPoint",
-        "type": "uint16"
-      },
-      {
         "internalType": "address",
-        "name": "_optimalSwapper",
+        "name": "_vaultAutomator",
         "type": "address"
       }
     ],

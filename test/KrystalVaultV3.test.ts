@@ -1,12 +1,11 @@
 import { ethers } from "hardhat";
-import { Contract, parseEther } from "ethers";
+import { parseEther } from "ethers";
 import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-import krystalVaultV3ABI from "../abi/KrystalVaultV3.json";
-import { KrystalVaultV3, KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
+import { KrystalVault, KrystalVaultFactory, TestERC20 } from "../typechain-types";
 
 import { getMaxTick, getMinTick } from "../helpers/univ3";
 import { blockNumber } from "../helpers/vm";
@@ -16,10 +15,10 @@ import { last } from "lodash";
 
 chai.use(chaiAsPromised);
 
-describe("KrystalVaultV3Factory", function () {
+describe("KrystalVaultFactory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
-  let implementation: KrystalVaultV3;
-  let factory: KrystalVaultV3Factory;
+  let implementation: KrystalVault;
+  let factory: KrystalVaultFactory;
   let vaultAddress: string;
   let token0: TestERC20;
   let token1: TestERC20;
@@ -28,7 +27,7 @@ describe("KrystalVaultV3Factory", function () {
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    implementation = await ethers.deployContract("KrystalVaultV3");
+    implementation = await ethers.deployContract("KrystalVault");
 
     await implementation.waitForDeployment();
 
@@ -38,13 +37,16 @@ describe("KrystalVaultV3Factory", function () {
     const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
     await optimalSwapper.waitForDeployment();
 
-    factory = await ethers.deployContract("KrystalVaultV3Factory", [
+    const optimalSwapperAddress = await optimalSwapper.getAddress();
+    console.log("optimalSwapper deployed at: ", optimalSwapperAddress);
+
+    factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
-      optimalSwapper,
+      NetworkConfig.base_mainnet.krystalVaultAutomator,
+      optimalSwapperAddress,
       NetworkConfig.base_mainnet.platformFeeRecipient,
       NetworkConfig.base_mainnet.platformFeeBasisPoint,
-      NetworkConfig.base_mainnet.ownerFeeBasisPoint,
     ]);
 
     await factory.waitForDeployment();
@@ -98,6 +100,7 @@ describe("KrystalVaultV3Factory", function () {
         recipient: alice,
         deadline: (await blockNumber()) + 100,
       },
+      NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
       "Vault Name",
       "VAULT",
     );
@@ -130,6 +133,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -151,6 +155,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -172,6 +177,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -193,6 +199,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -214,6 +221,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -242,6 +250,7 @@ describe("KrystalVaultV3Factory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Vault Name",
         "VAULT",
       ),
@@ -249,12 +258,12 @@ describe("KrystalVaultV3Factory", function () {
   });
 });
 
-describe("KrystalVaultV3", function () {
+describe("KrystalVault", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
   let token0: TestERC20, token1: TestERC20;
 
-  let aliceVaultContract: KrystalVaultV3;
-  let bobVaultContract: KrystalVaultV3;
+  let aliceVaultContract: KrystalVault;
+  let bobVaultContract: KrystalVault;
 
   let vaultAddress: string;
   let nfpmAddr = TestConfig.base_mainnet.nfpm;
@@ -262,7 +271,7 @@ describe("KrystalVaultV3", function () {
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    const implementation = await ethers.deployContract("KrystalVaultV3");
+    const implementation = await ethers.deployContract("KrystalVault");
 
     await implementation.waitForDeployment();
 
@@ -270,15 +279,19 @@ describe("KrystalVaultV3", function () {
     console.log("implementation deployed at: ", implementationAddress);
 
     const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
+    
     await optimalSwapper.waitForDeployment();
 
-    const factory = await ethers.deployContract("KrystalVaultV3Factory", [
+    const optimalSwapperAddress = await optimalSwapper.getAddress();
+    console.log("optimalSwapper deployed at: ", optimalSwapperAddress);
+
+    const factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
-      optimalSwapper,
+      NetworkConfig.base_mainnet.krystalVaultAutomator,
+      optimalSwapperAddress,
       NetworkConfig.base_mainnet.platformFeeRecipient,
       NetworkConfig.base_mainnet.platformFeeBasisPoint,
-      NetworkConfig.base_mainnet.ownerFeeBasisPoint,
     ]);
 
     await factory.waitForDeployment();
@@ -329,6 +342,7 @@ describe("KrystalVaultV3", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Alice Vault",
         "VAULT",
       );
@@ -337,7 +351,7 @@ describe("KrystalVaultV3", function () {
       // @ts-ignore
       vaultAddress = last(receipt?.logs)?.args?.[1];
       console.log("aliceVaultContract deployed at: ", vaultAddress);
-      aliceVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, alice);
+      aliceVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, alice);
     }
 
     {
@@ -358,6 +372,7 @@ describe("KrystalVaultV3", function () {
           recipient: bob,
           deadline: (await blockNumber()) + 100,
         },
+        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
         "Bob Vault",
         "VAULT",
       );
@@ -366,7 +381,7 @@ describe("KrystalVaultV3", function () {
       // @ts-ignore
       vaultAddress = last(receipt?.logs)?.args?.[1];
       console.log("bobVault deployed at: ", vaultAddress);
-      bobVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, bob);
+      bobVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, bob);
     }
   });
 
@@ -455,7 +470,6 @@ describe("KrystalVaultV3", function () {
       expect(pos[1]).to.be.equal(BigInt("0"));
       expect(pos[2]).to.be.equal(BigInt("3614246991881744932"));
     }
-
   });
 
   ////// Happy Path

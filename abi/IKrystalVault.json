@@ -31,6 +31,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidOwnerFee",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "InvalidPosition",
     "type": "error"
   },

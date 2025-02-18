@@ -20,33 +20,34 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
   using SafeERC20 for IERC20;
   IUniswapV3Factory public uniswapV3Factory;
   address public krystalVaultImplementation;
+  address public krystalVaultAutomator;
 
   mapping(address => Vault[]) public vaultsByAddress;
 
   address[] public allVaults;
   address public platformFeeRecipient;
   uint16 public platformFeeBasisPoint;
-  uint16 public ownerFeeBasisPoint;
   address public optimalSwapper;
 
   constructor(
     address uniswapV3FactoryAddress,
     address krystalVaultImplementationAddress,
+    address krystalVaultAutomatorAddress,
     address optimalSwapperAddress,
     address platformFeeRecipientAddress,
-    uint16 _platformFeeBasisPoint,
-    uint16 _ownerFeeBasisPoint
+    uint16 _platformFeeBasisPoint
   ) Ownable(_msgSender()) {
     require(uniswapV3FactoryAddress != address(0), ZeroAddress());
     require(krystalVaultImplementationAddress != address(0), ZeroAddress());
+    require(krystalVaultAutomatorAddress != address(0), ZeroAddress());
     require(optimalSwapperAddress != address(0), ZeroAddress());
     require(platformFeeRecipientAddress != address(0), ZeroAddress());
     uniswapV3Factory = IUniswapV3Factory(uniswapV3FactoryAddress);
     krystalVaultImplementation = krystalVaultImplementationAddress;
+    krystalVaultAutomator = krystalVaultAutomatorAddress;
     optimalSwapper = optimalSwapperAddress;
     platformFeeRecipient = platformFeeRecipientAddress;
     platformFeeBasisPoint = _platformFeeBasisPoint;
-    ownerFeeBasisPoint = _ownerFeeBasisPoint;
   }
 
   /// @notice Create a KrystalVault
@@ -58,10 +59,12 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
   function createVault(
     address nfpm,
     INonfungiblePositionManager.MintParams memory params,
+    uint16 _ownerFeeBasisPoint,
     string memory name,
     string memory symbol
   ) external override whenNotPaused returns (address krystalVault) {
     require(params.token0 != params.token1, IdenticalAddresses());
+    require(_ownerFeeBasisPoint <= 1000, InvalidOwnerFee());
 
     (address token0, address token1) = params.token0 < params.token1
       ? (params.token0, params.token1)
@@ -86,12 +89,15 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
       nfpm,
       pool,
       _msgSender(),
+      VaultConfig({
+        platformFeeBasisPoint: platformFeeBasisPoint,
+        platformFeeRecipient: platformFeeRecipient,
+        ownerFeeBasisPoint: _ownerFeeBasisPoint
+      }),
       name,
       symbol,
-      platformFeeBasisPoint,
-      platformFeeRecipient,
-      ownerFeeBasisPoint,
-      optimalSwapper
+      optimalSwapper,
+      krystalVaultAutomator
     );
 
     IERC20(token0).safeTransferFrom(_msgSender(), krystalVault, params.amount0Desired);
@@ -115,16 +121,20 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
     _unpause();
   }
 
+  function setKrystalVaultImplementation(address _krystalVaultImplementation) public onlyOwner {
+    krystalVaultImplementation = _krystalVaultImplementation;
+  }
+
+  function setKrystalVaultAutomator(address _krystalVaultAutomator) public onlyOwner {
+    krystalVaultAutomator = _krystalVaultAutomator;
+  }
+
   function setPlatformFeeRecipient(address _platformFeeRecipient) public onlyOwner {
     platformFeeRecipient = _platformFeeRecipient;
   }
 
   function setPlatformFeeBasisPoint(uint16 _platformFeeBasisPoint) public onlyOwner {
     platformFeeBasisPoint = _platformFeeBasisPoint;
-  }
-
-  function setOwnerFeeBasisPoint(uint16 _ownerFeeBasisPoint) public onlyOwner {
-    ownerFeeBasisPoint = _ownerFeeBasisPoint;
   }
 
   /// @inheritdoc IMulticall
@@ -135,7 +145,7 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
 
       if (!success) {
         // Next 5 lines from https://ethereum.stackexchange.com/a/83577
-        if (result.length < 68) revert();
+        if (result.length < 68) revert("Multicall: failed");
         assembly {
           result := add(result, 0x04)
         }
