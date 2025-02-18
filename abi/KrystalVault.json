@@ -1005,6 +1005,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getVaultOwner",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -1495,6 +1508,19 @@
   {
     "inputs": [],
     "name": "vaultFactory",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "vaultOwner",
     "outputs": [
       {
         "internalType": "address",

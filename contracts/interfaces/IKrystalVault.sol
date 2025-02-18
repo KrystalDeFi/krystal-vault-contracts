@@ -101,4 +101,6 @@ interface IKrystalVault is IKrystalVaultCommon {
   function grantAdminRole(address _address) external;
 
   function revokeAdminRole(address _address) external;
+
+  function getVaultOwner() external view returns (address);
 }
