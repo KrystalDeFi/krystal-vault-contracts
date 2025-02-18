@@ -16,13 +16,13 @@ import "@uniswap/v3-core/contracts/libraries/TickMath.sol";
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 
-import "./interfaces/IKrystalVaultV3.sol";
+import "./interfaces/IKrystalVault.sol";
 import "./interfaces/IOptimalSwapper.sol";
 
-/// @title KrystalVaultV3
+/// @title KrystalVault
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
-contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, ReentrancyGuard, IKrystalVaultV3 {
+contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, ReentrancyGuard, IKrystalVault {
   bytes32 public constant ADMIN_ROLE_HASH = keccak256("ADMIN_ROLE");
 
   uint160 internal constant MAX_SQRT_RATIO_LESS_ONE = 1461446703485210103287273052203988822378723970342 - 1;
@@ -40,9 +40,9 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
 
   /// @param _nfpm Uniswap V3 nonfungible position manager address
   /// @param _pool Uniswap V3 pool address
-  /// @param _owner Owner of the KrystalVaultV3
-  /// @param name Name of the KrystalVaultV3
-  /// @param symbol Symbol of the KrystalVaultV3
+  /// @param _owner Owner of the KrystalVault
+  /// @param name Name of the KrystalVault
+  /// @param symbol Symbol of the KrystalVault
   function initialize(
     address _nfpm,
     address _pool,
@@ -491,9 +491,9 @@ contract KrystalVaultV3 is AccessControlUpgradeable, ERC20PermitUpgradeable, Ree
     return (liquidity, tokensOwed0, tokensOwed1);
   }
 
-  /// @notice Get the total amounts of token0 and token1 in the KrystalVaultV3
-  /// @return total0 Quantity of token0 in both positions and unused in the KrystalVaultV3
-  /// @return total1 Quantity of token1 in both positions and unused in the KrystalVaultV3
+  /// @notice Get the total amounts of token0 and token1 in the KrystalVault
+  /// @return total0 Quantity of token0 in both positions and unused in the KrystalVault
+  /// @return total1 Quantity of token1 in both positions and unused in the KrystalVault
   function getTotalAmounts() public view override returns (uint256 total0, uint256 total1) {
     (, uint256 base0, uint256 base1) = getBasePosition();
     total0 = state.token0.balanceOf(address(this)) + base0;

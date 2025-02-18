@@ -81,7 +81,7 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "krystalVaultV3",
+        "name": "krystalVault",
         "type": "address"
       },
       {
@@ -247,7 +247,7 @@
     "outputs": [
       {
         "internalType": "address",
-        "name": "krystalVaultV3",
+        "name": "krystalVault",
         "type": "address"
       }
     ],

@@ -6,9 +6,9 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@uniswap/v3-core/contracts/interfaces/IUniswapV3Pool.sol";
 import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
 
-import "./IKrystalVaultV3Common.sol";
+import "./IKrystalVaultCommon.sol";
 
-interface IKrystalVaultV3 is IKrystalVaultV3Common {
+interface IKrystalVault is IKrystalVaultCommon {
   struct VaultState {
     IUniswapV3Pool pool;
     INonfungiblePositionManager nfpm;
