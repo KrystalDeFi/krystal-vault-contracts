@@ -31,6 +31,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   using SafeERC20 for IERC20;
 
   address public vaultFactory;
+  address public vaultOwner;
 
   VaultState public state;
   VaultConfig public config;
@@ -66,6 +67,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     _grantRole(ADMIN_ROLE_HASH, _owner);
 
     vaultFactory = _msgSender();
+    vaultOwner = _owner;
 
     optimalSwapper = IOptimalSwapper(_optimalSwapper);
 
@@ -251,7 +253,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     address to,
     uint256 amount0Min,
     uint256 amount1Min
-  ) external override onlyRole(DEFAULT_ADMIN_ROLE) nonReentrant {
+  ) external override onlyRole(ADMIN_ROLE_HASH) nonReentrant {
     uint256 shares = IERC20(address(this)).balanceOf(_msgSender());
 
     require(shares > 0, InvalidShares());
@@ -570,5 +572,9 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     assert(x <= type(uint128).max);
 
     return uint128(x);
+  }
+
+  function getVaultOwner() external view override returns (address) {
+    return vaultOwner;
   }
 }
