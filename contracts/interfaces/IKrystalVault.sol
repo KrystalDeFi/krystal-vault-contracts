@@ -43,13 +43,13 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 tokenId
   );
 
-  event VaultRebalance(
-    int24 tick,
-    uint256 totalAmount0,
-    uint256 totalAmount1,
-    uint256 feeAmount0,
-    uint256 feeAmount1,
-    uint256 totalSupply
+  event ChangeRange(
+    address indexed nfpm,
+    uint256 indexed oldTokenId,
+    uint256 indexed newTokenId,
+    uint256 liquidity,
+    uint256 amount0Added,
+    uint256 amount1Added
   );
 
   event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);

@@ -309,25 +309,18 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     _collectFees();
 
     /// Withdraw all liquidity and collect all fees from Uniswap pool
-    (uint128 baseLiquidity, uint256 feesBase0, uint256 feesBase1) = _position();
+    (uint128 baseLiquidity, , ) = _position();
 
     _decreaseLiquidityAndCollectFees(baseLiquidity, address(this), true, decreasedAmount0Min, decreasedAmount1Min);
 
-    emit VaultRebalance(
-      currentTick(),
-      state.token0.balanceOf(address(this)),
-      state.token1.balanceOf(address(this)),
-      feesBase0,
-      feesBase1,
-      totalSupply()
-    );
+    uint256 oldTokenId = state.currentTokenId;
 
     state.currentTickLower = _newTickLower;
     state.currentTickUpper = _newTickUpper;
     // optimally swap tokens
     _optimalSwap(_newTickLower, _newTickUpper);
 
-    _mintLiquidity(
+    (, uint128 liquidity, uint256 amount0, uint256 amount1) = _mintLiquidity(
       INonfungiblePositionManager.MintParams({
         token0: address(state.token0),
         token1: address(state.token1),
@@ -342,6 +335,8 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
         deadline: block.timestamp
       })
     );
+
+    emit ChangeRange(address(state.nfpm), oldTokenId, state.currentTokenId, liquidity, amount0, amount1);
   }
 
   /// @notice Compound fees
