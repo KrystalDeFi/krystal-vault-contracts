@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import { IUniswapV3Factory } from "@uniswap/v3-core/contracts/interfaces/IUniswapV3Factory.sol";
 import { INonfungiblePositionManager } from "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.sol";
+import { IMulticall } from "@uniswap/v3-periphery/contracts/interfaces/IMulticall.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -15,7 +16,7 @@ import { KrystalVault } from "./KrystalVault.sol";
 import "./interfaces/IKrystalVaultFactory.sol";
 
 /// @title KrystalVaultFactory
-contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory {
+contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMulticall {
   using SafeERC20 for IERC20;
   IUniswapV3Factory public uniswapV3Factory;
   address public krystalVaultImplementation;
@@ -124,5 +125,24 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory {
 
   function setOwnerFeeBasisPoint(uint16 _ownerFeeBasisPoint) public onlyOwner {
     ownerFeeBasisPoint = _ownerFeeBasisPoint;
+  }
+
+  /// @inheritdoc IMulticall
+  function multicall(bytes[] calldata data) public payable override returns (bytes[] memory results) {
+    results = new bytes[](data.length);
+    for (uint256 i = 0; i < data.length; i++) {
+      (bool success, bytes memory result) = address(this).delegatecall(data[i]);
+
+      if (!success) {
+        // Next 5 lines from https://ethereum.stackexchange.com/a/83577
+        if (result.length < 68) revert();
+        assembly {
+          result := add(result, 0x04)
+        }
+        revert(abi.decode(result, (string)));
+      }
+
+      results[i] = result;
+    }
   }
 }

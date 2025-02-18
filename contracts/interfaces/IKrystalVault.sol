@@ -46,7 +46,7 @@ interface IKrystalVault is IKrystalVaultCommon {
   event ChangeRange(
     address indexed nfpm,
     uint256 indexed oldTokenId,
-    uint256 indexed newTokenId,
+    uint256 newTokenId,
     uint256 liquidity,
     uint256 amount0Added,
     uint256 amount1Added
