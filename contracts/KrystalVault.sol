@@ -421,7 +421,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     (tokenId, liquidity, amount0, amount1) = state.nfpm.mint(params);
 
     state.currentTokenId = tokenId;
-    emit VaultPositionMint(tokenId);
+    emit VaultPositionMint(address(state.nfpm), tokenId);
 
     return (tokenId, liquidity, amount0, amount1);
   }

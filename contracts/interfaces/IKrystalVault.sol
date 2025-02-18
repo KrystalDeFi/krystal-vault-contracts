@@ -28,7 +28,7 @@ interface IKrystalVault is IKrystalVaultCommon {
     address ownerFeeRecipient;
   }
 
-  event VaultPositionMint(uint256 indexed tokenId);
+  event VaultPositionMint(address indexed nfpm, uint256 indexed tokenId);
 
   event VaultDeposit(address indexed shareholder, uint256 shares, uint256 deposit0, uint256 deposit1);
 
