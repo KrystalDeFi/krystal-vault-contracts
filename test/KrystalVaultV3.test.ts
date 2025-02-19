@@ -279,7 +279,7 @@ describe("KrystalVault", function () {
     console.log("implementation deployed at: ", implementationAddress);
 
     const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
-    
+
     await optimalSwapper.waitForDeployment();
 
     const optimalSwapperAddress = await optimalSwapper.getAddress();
@@ -450,6 +450,10 @@ describe("KrystalVault", function () {
       expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
       expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
     }
+    // deploy more liquidity
+    await token0.connect(alice).approve(bobVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(bobVaultContract, parseEther("1000"));
+    await bobVaultContract.connect(alice).deposit(parseEther("500"), parseEther("500"), 0, 0, alice.address);
     {
       // Out range, currentTick > tickUpper
       await aliceVaultContract.rebalance(-600, -300, 0, 0, 0, 0);
@@ -457,8 +461,8 @@ describe("KrystalVault", function () {
       expect(state.currentTickLower).to.equal(-600);
       expect(state.currentTickUpper).to.equal(-300);
       const pos = await aliceVaultContract.getBasePosition();
-      expect(pos[1]).to.be.equal(BigInt("352204794643264249"));
-      expect(pos[2]).to.be.equal(BigInt("0"));
+      expect(pos[1]).to.be.equal(BigInt("0"));
+      expect(pos[2]).to.be.equal(BigInt("3997809259660018121"));
     }
     {
       // Out range, currentTick < tickLower
@@ -467,8 +471,8 @@ describe("KrystalVault", function () {
       expect(state.currentTickLower).to.equal(300);
       expect(state.currentTickUpper).to.equal(600);
       const pos = await aliceVaultContract.getBasePosition();
-      expect(pos[1]).to.be.equal(BigInt("0"));
-      expect(pos[2]).to.be.equal(BigInt("3614246991881744932"));
+      expect(pos[1]).to.be.equal(BigInt("3962939595095024234"));
+      expect(pos[2]).to.be.equal(BigInt("0"));
     }
   });
 
