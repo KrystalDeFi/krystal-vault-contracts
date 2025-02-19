@@ -25,6 +25,7 @@ interface IKrystalVaultFactory is IKrystalVaultCommon {
   function createVault(
     address nfpm,
     INonfungiblePositionManager.MintParams memory params,
+    uint16 ownerFeeBasisPoint,
     string memory name,
     string memory symbol
   ) external returns (address krystalVault);

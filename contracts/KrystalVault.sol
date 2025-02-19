@@ -42,18 +42,20 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   /// @param _nfpm Uniswap V3 nonfungible position manager address
   /// @param _pool Uniswap V3 pool address
   /// @param _owner Owner of the KrystalVault
+  /// @param _config Configuration of the KrystalVault
   /// @param name Name of the KrystalVault
   /// @param symbol Symbol of the KrystalVault
+  /// @param _optimalSwapper Address of the optimal swapper
+  /// @param _vaultAutomator Address of the vault automator
   function initialize(
     address _nfpm,
     address _pool,
     address _owner,
+    VaultConfig memory _config,
     string memory name,
     string memory symbol,
-    uint16 platformFeeBasisPoint,
-    address platformFeeRecipient,
-    uint16 ownerFeeBasisPoint,
-    address _optimalSwapper
+    address _optimalSwapper,
+    address _vaultAutomator
   ) public initializer {
     require(_nfpm != address(0), ZeroAddress());
     require(_pool != address(0), ZeroAddress());
@@ -65,19 +67,14 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
 
     _grantRole(DEFAULT_ADMIN_ROLE, _owner);
     _grantRole(ADMIN_ROLE_HASH, _owner);
+    _grantRole(ADMIN_ROLE_HASH, _vaultAutomator);
 
     vaultFactory = _msgSender();
     vaultOwner = _owner;
 
     optimalSwapper = IOptimalSwapper(_optimalSwapper);
 
-    // platformFeeBasisPoint is in basis points (1% = 100 basis points)
-    config = VaultConfig({
-      platformFeeBasisPoint: platformFeeBasisPoint,
-      platformFeeRecipient: platformFeeRecipient,
-      ownerFeeBasisPoint: ownerFeeBasisPoint,
-      ownerFeeRecipient: _owner
-    });
+    config = _config;
 
     state = VaultState({
       pool: IUniswapV3Pool(_pool),
@@ -391,11 +388,11 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       feeAmount0 = (owed0 * config.ownerFeeBasisPoint) / 10000;
       feeAmount1 = (owed1 * config.ownerFeeBasisPoint) / 10000;
       if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
-        state.token0.safeTransfer(config.ownerFeeRecipient, feeAmount0);
+        state.token0.safeTransfer(vaultOwner, feeAmount0);
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
-        state.token1.safeTransfer(config.ownerFeeRecipient, feeAmount1);
+        state.token1.safeTransfer(vaultOwner, feeAmount1);
 
-      emit FeeCollected(config.ownerFeeRecipient, 2, feeAmount0, feeAmount1);
+      emit FeeCollected(vaultOwner, 2, feeAmount0, feeAmount1);
     }
 
     return liquidity;

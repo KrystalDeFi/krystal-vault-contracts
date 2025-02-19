@@ -5,15 +5,16 @@ export interface IConfig {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
-  krystalVaultV3: {
+  krystalVault: {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
-  krystalVaultV3Factory?: {
+  krystalVaultFactory?: {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
   uniswapV3Factory?: string;
+  krystalVaultAutomator?: string;
   // For platform fee recipient
   platformFeeRecipient?: string;
   // For platform fee in basis point

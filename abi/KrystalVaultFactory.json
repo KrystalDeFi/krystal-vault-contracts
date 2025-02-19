@@ -13,6 +13,11 @@
       },
       {
         "internalType": "address",
+        "name": "krystalVaultAutomatorAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "optimalSwapperAddress",
         "type": "address"
       },
@@ -24,11 +29,6 @@
       {
         "internalType": "uint16",
         "name": "_platformFeeBasisPoint",
-        "type": "uint16"
-      },
-      {
-        "internalType": "uint16",
-        "name": "_ownerFeeBasisPoint",
         "type": "uint16"
       }
     ],
@@ -94,6 +94,11 @@
   {
     "inputs": [],
     "name": "InvalidOwner",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidOwnerFee",
     "type": "error"
   },
   {
@@ -397,6 +402,11 @@
         "type": "tuple"
       },
       {
+        "internalType": "uint16",
+        "name": "_ownerFeeBasisPoint",
+        "type": "uint16"
+      },
+      {
         "internalType": "string",
         "name": "name",
         "type": "string"
@@ -416,6 +426,19 @@
       }
     ],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "krystalVaultAutomator",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -478,19 +501,6 @@
   },
   {
     "inputs": [],
-    "name": "ownerFeeBasisPoint",
-    "outputs": [
-      {
-        "internalType": "uint16",
-        "name": "",
-        "type": "uint16"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "pause",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -545,12 +555,25 @@
   {
     "inputs": [
       {
-        "internalType": "uint16",
-        "name": "_ownerFeeBasisPoint",
-        "type": "uint16"
+        "internalType": "address",
+        "name": "_krystalVaultAutomator",
+        "type": "address"
       }
     ],
-    "name": "setOwnerFeeBasisPoint",
+    "name": "setKrystalVaultAutomator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_krystalVaultImplementation",
+        "type": "address"
+      }
+    ],
+    "name": "setKrystalVaultImplementation",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

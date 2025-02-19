@@ -3,6 +3,12 @@
 pragma solidity ^0.8.28;
 
 interface IKrystalVaultCommon {
+  struct VaultConfig {
+    uint16 platformFeeBasisPoint;
+    address platformFeeRecipient;
+    uint16 ownerFeeBasisPoint;
+  }
+
   error ZeroAddress();
 
   error ZeroAmount();
@@ -30,4 +36,6 @@ interface IKrystalVaultCommon {
   error InvalidOwner();
 
   error InvalidPosition();
+
+  error InvalidOwnerFee();
 }

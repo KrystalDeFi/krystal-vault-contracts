@@ -16,8 +16,8 @@ Uniswap V3 Liquidity Pool types.
   - [Deployment](#deployment)
   - [Contracts](#contracts)
   - [Events](#events)
-    - [KrystalVaultV3](#krystalvaultv3)
-    - [KrystalVaultV3Factory](#krystalvaultv3factory)
+    - [KrystalVault](#krystalvault)
+    - [KrystalVaultFactory](#krystalvaultfactory)
 
 ## Installation
 
@@ -63,14 +63,14 @@ the contracts.
 
 The main contracts in this repository are:
 
-- `KrystalVaultV3`: The main vault contract.
-- `KrystalVaultV3Factory`: Factory contract to create new vault instances.
+- `KrystalVault`: The main vault contract.
+- `KrystalVaultFactory`: Factory contract to create new vault instances.
 
 ## Events
 
 The contracts emit various events. Some of the key events are:
 
-### KrystalVaultV3
+### KrystalVault
 
 - `AddLiquidity`
 - `Approval`
@@ -88,7 +88,7 @@ The contracts emit various events. Some of the key events are:
 - `VaultRebalance`
 - `VaultWithdraw`
 
-### KrystalVaultV3Factory
+### KrystalVaultFactory
 
 - `OwnershipTransferred`
 - `Paused`
