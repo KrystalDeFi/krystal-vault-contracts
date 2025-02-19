@@ -5,8 +5,8 @@ import { expect } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-import krystalVaultV3ABI from "../abi/KrystalVaultV3.json";
-import { KrystalVaultV3, KrystalVaultV3Factory, TestERC20 } from "../typechain-types";
+import krystalVaultABI from "../abi/KrystalVault.json";
+import { KrystalVault, KrystalVaultFactory, TestERC20 } from "../typechain-types";
 
 import { getMaxTick, getMinTick } from "../helpers/univ3";
 import { blockNumber } from "../helpers/vm";
@@ -16,10 +16,10 @@ import { last } from "lodash";
 
 chai.use(chaiAsPromised);
 
-describe("KrystalVaultV3Factory", function () {
+describe("KrystalVaultFactory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
-  let implementation: KrystalVaultV3;
-  let factory: KrystalVaultV3Factory;
+  let implementation: KrystalVault;
+  let factory: KrystalVaultFactory;
   let vaultAddress: string;
   let token0: TestERC20;
   let token1: TestERC20;
@@ -28,7 +28,7 @@ describe("KrystalVaultV3Factory", function () {
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    implementation = await ethers.deployContract("KrystalVaultV3");
+    implementation = await ethers.deployContract("KrystalVault");
 
     await implementation.waitForDeployment();
 
@@ -38,7 +38,7 @@ describe("KrystalVaultV3Factory", function () {
     const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
     await optimalSwapper.waitForDeployment();
 
-    factory = await ethers.deployContract("KrystalVaultV3Factory", [
+    factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
       optimalSwapper,
@@ -249,12 +249,12 @@ describe("KrystalVaultV3Factory", function () {
   });
 });
 
-describe("KrystalVaultV3", function () {
+describe("KrystalVault", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
   let token0: TestERC20, token1: TestERC20;
 
-  let aliceVaultContract: KrystalVaultV3;
-  let bobVaultContract: KrystalVaultV3;
+  let aliceVaultContract: KrystalVault;
+  let bobVaultContract: KrystalVault;
 
   let vaultAddress: string;
   let nfpmAddr = TestConfig.base_mainnet.nfpm;
@@ -262,7 +262,7 @@ describe("KrystalVaultV3", function () {
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
 
-    const implementation = await ethers.deployContract("KrystalVaultV3");
+    const implementation = await ethers.deployContract("KrystalVault");
 
     await implementation.waitForDeployment();
 
@@ -272,7 +272,7 @@ describe("KrystalVaultV3", function () {
     const optimalSwapper = await ethers.deployContract("PoolOptimalSwapper");
     await optimalSwapper.waitForDeployment();
 
-    const factory = await ethers.deployContract("KrystalVaultV3Factory", [
+    const factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
       optimalSwapper,
@@ -337,7 +337,7 @@ describe("KrystalVaultV3", function () {
       // @ts-ignore
       vaultAddress = last(receipt?.logs)?.args?.[1];
       console.log("aliceVaultContract deployed at: ", vaultAddress);
-      aliceVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, alice);
+      aliceVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, alice);
     }
 
     {
@@ -366,7 +366,7 @@ describe("KrystalVaultV3", function () {
       // @ts-ignore
       vaultAddress = last(receipt?.logs)?.args?.[1];
       console.log("bobVault deployed at: ", vaultAddress);
-      bobVaultContract = await ethers.getContractAt("KrystalVaultV3", vaultAddress, bob);
+      bobVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, bob);
     }
   });
 
@@ -421,7 +421,6 @@ describe("KrystalVaultV3", function () {
   it("Should rebalance the Vault", async () => {
     const amount0Desired = parseEther("1");
     const amount1Desired = parseEther("1");
-
     await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
     await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
 
@@ -435,15 +434,23 @@ describe("KrystalVaultV3", function () {
       expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
       expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
     }
+    await token0.connect(alice).approve(bobVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(bobVaultContract, parseEther("1000"));
+    // deposit a lot to another vault to make sure the liquidity is deep enough
+    await bobVaultContract.connect(alice).deposit(parseEther("100"), parseEther("100"), 0, 0, bob.address);
+
     {
       // Out range, currentTick > tickUpper
+      console.log("currentTick before", await aliceVaultContract.currentTick());
       await aliceVaultContract.rebalance(-600, -300, 0, 0, 0, 0);
+      console.log("currentTick after", await aliceVaultContract.currentTick());
       const state = await aliceVaultContract.state();
       expect(state.currentTickLower).to.equal(-600);
       expect(state.currentTickUpper).to.equal(-300);
       const pos = await aliceVaultContract.getBasePosition();
-      expect(pos[1]).to.be.equal(BigInt("352204794643264249"));
-      expect(pos[2]).to.be.equal(BigInt("0"));
+      console.log("pos", pos[1], pos[2]);
+      expect(pos[1]).to.be.equal(BigInt("0"));
+      expect(pos[2]).to.be.equal(BigInt("3979645504575870840"));
     }
     {
       // Out range, currentTick < tickLower
@@ -452,10 +459,9 @@ describe("KrystalVaultV3", function () {
       expect(state.currentTickLower).to.equal(300);
       expect(state.currentTickUpper).to.equal(600);
       const pos = await aliceVaultContract.getBasePosition();
-      expect(pos[1]).to.be.equal(BigInt("0"));
-      expect(pos[2]).to.be.equal(BigInt("3614246991881744932"));
+      expect(pos[1]).to.be.equal(BigInt("3954209818243596409"));
+      expect(pos[2]).to.be.equal(BigInt("0"));
     }
-
   });
 
   ////// Happy Path
