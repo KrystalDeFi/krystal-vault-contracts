@@ -153,10 +153,8 @@ export const deployKrystalVaultAutomatorContract = async (
       "KrystalVaultAutomator",
       existingContract?.["krystalVaultAutomator"],
       "contracts/KrystalVaultAutomator.sol:KrystalVaultAutomator",
+      deployer,
     )) as KrystalVaultAutomator;
-    if (!existingContract?.["krystalVaultAutomator"]) {
-      await krystalVaultAutomator.initialize(deployer);
-    }
   }
   return {
     krystalVaultAutomator,

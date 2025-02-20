@@ -44,9 +44,8 @@ describe("KrystalVaultAutomator", () => {
     await optimalSwapper.waitForDeployment();
     console.log("optimalSwapper deployed at: ", await optimalSwapper.getAddress());
 
-    automator = await ethers.deployContract("KrystalVaultAutomator");
+    automator = await ethers.deployContract("KrystalVaultAutomator", [operator]);
     await automator.waitForDeployment();
-    await automator.initialize(operator);
     console.log("automator deployed at: ", await automator.getAddress());
 
     factory = await ethers.deployContract("KrystalVaultFactory", [
