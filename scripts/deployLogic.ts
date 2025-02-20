@@ -1,6 +1,6 @@
 import { ethers, network, run } from "hardhat";
 import { NetworkConfig } from "../configs/networkConfig";
-import { KrystalVault, KrystalVaultFactory, PoolOptimalSwapper } from "../typechain-types";
+import { KrystalVault, KrystalVaultFactory, PoolOptimalSwapper, KrystalVaultAutomator } from "../typechain-types";
 import { BaseContract } from "ethers";
 import { IConfig } from "../configs/interfaces";
 import { sleep } from "./helpers";
@@ -14,6 +14,7 @@ export interface Contracts {
   poolOptimalSwapper?: PoolOptimalSwapper;
   krystalVault?: KrystalVault;
   krystalVaultFactory?: KrystalVaultFactory;
+  krystalVaultAutomator?: KrystalVaultAutomator;
 }
 
 export const deploy = async (existingContract: Record<string, any> | undefined = undefined): Promise<Contracts> => {
@@ -44,10 +45,12 @@ async function deployContracts(
 
   const poolOptimalSwapper = await deployPoolOptimalSwapperContract(++step, existingContract, deployer);
   const krystalVault = await deployKrystalVaultContract(++step, existingContract, deployer);
+  const krystalVaultAutomator = await deployKrystalVaultAutomatorContract(++step, existingContract, deployer);
 
   const contracts: Contracts = {
     poolOptimalSwapper: poolOptimalSwapper.poolOptimalSwapper,
     krystalVault: krystalVault.krystalVault,
+    krystalVaultAutomator: krystalVaultAutomator.krystalVaultAutomator,
   };
 
   contracts.krystalVaultFactory = (
@@ -122,7 +125,7 @@ export const deployKrystalVaultFactoryContract = async (
       "contracts/KrystalVaultFactory.sol:KrystalVaultFactory",
       config.uniswapV3Factory,
       existingContract?.["krystalVault"] || contracts?.krystalVault?.target,
-      config.krystalVaultAutomator,
+      existingContract?.["krystalVaultAutomator"] || contracts?.krystalVaultAutomator?.target,
       existingContract?.["poolOptimalSwapper"] || contracts?.poolOptimalSwapper?.target,
       config.platformFeeRecipient,
       config.platformFeeBasisPoint,
@@ -130,6 +133,31 @@ export const deployKrystalVaultFactoryContract = async (
   }
   return {
     krystalVaultFactory,
+  };
+};
+
+export const deployKrystalVaultAutomatorContract = async (
+  step: number,
+  existingContract: Record<string, any> | undefined,
+  deployer: string,
+  customNetworkConfig?: IConfig,
+  contracts?: Contracts,
+): Promise<Contracts> => {
+  const config = { ...networkConfig, ...customNetworkConfig };
+
+  let krystalVaultAutomator;
+  if (config.krystalVaultAutomator?.enabled) {
+    krystalVaultAutomator = (await deployContract(
+      `${step} >>`,
+      config.krystalVaultAutomator?.autoVerifyContract,
+      "KrystalVaultAutomator",
+      existingContract?.["krystalVaultAutomator"],
+      "contracts/KrystalVaultAutomator.sol:KrystalVaultAutomator",
+      deployer,
+    )) as KrystalVaultAutomator;
+  }
+  return {
+    krystalVaultAutomator,
   };
 };
 

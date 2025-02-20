@@ -13,8 +13,12 @@ export interface IConfig {
     enabled?: boolean;
     autoVerifyContract?: boolean;
   };
+  krystalVaultAutomator?: {
+    enabled?: boolean;
+    autoVerifyContract?: boolean;
+  };
   uniswapV3Factory?: string;
-  krystalVaultAutomator?: string;
+  automatorAddress?: string;
   // For platform fee recipient
   platformFeeRecipient?: string;
   // For platform fee in basis point

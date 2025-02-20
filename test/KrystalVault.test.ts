@@ -43,7 +43,7 @@ describe("KrystalVaultFactory", function () {
     factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
-      NetworkConfig.base_mainnet.krystalVaultAutomator,
+      NetworkConfig.base_mainnet.automatorAddress,
       optimalSwapperAddress,
       NetworkConfig.base_mainnet.platformFeeRecipient,
       NetworkConfig.base_mainnet.platformFeeBasisPoint,
@@ -288,7 +288,7 @@ describe("KrystalVault", function () {
     const factory = await ethers.deployContract("KrystalVaultFactory", [
       NetworkConfig.base_mainnet.uniswapV3Factory,
       implementationAddress,
-      NetworkConfig.base_mainnet.krystalVaultAutomator,
+      NetworkConfig.base_mainnet.automatorAddress,
       optimalSwapperAddress,
       NetworkConfig.base_mainnet.platformFeeRecipient,
       NetworkConfig.base_mainnet.platformFeeBasisPoint,
