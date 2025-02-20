@@ -95,8 +95,8 @@ describe("KrystalVaultAutomator", () => {
         fee: 3000,
         tickLower: getMinTick(60),
         tickUpper: getMaxTick(60),
-        amount0Desired: parseEther("1"),
-        amount1Desired: parseEther("1"),
+        amount0Desired: parseEther("2"),
+        amount1Desired: parseEther("2"),
         amount0Min: parseEther("0.9"),
         amount1Min: parseEther("0.9"),
         recipient: alice,
@@ -165,20 +165,26 @@ describe("KrystalVaultAutomator", () => {
     });
     {
       const state = await vault.state();
-      console.log("state: ", state);
+      expect(state.currentTickLower).to.be.equal(-300);
+      expect(state.currentTickUpper).to.be.equal(600);
       const pos = await vault.getBasePosition();
-      console.log("pos token0: ", pos[1]);
-      console.log("pos token1: ", pos[2]);
+      expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
+      expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
     }
     await automator.connect(operator).executeCompound(vault, 0, 0, abiEncodedOrder, orderSignature);
     {
       const state = await vault.state();
-      console.log("state: ", state);
       const pos = await vault.getBasePosition();
-      console.log("pos token0: ", pos[1]);
-      console.log("pos token1: ", pos[2]);
+      expect(pos[1]).to.be.equal(BigInt("2346332740274337653"));
+      expect(pos[2]).to.be.equal(BigInt("1651417881126655094"));
     }
+    const aliceBalance0Before = await token0.balanceOf(alice);
+    const aliceBalance1Before = await token1.balanceOf(alice);
     await automator.connect(operator).executeExit(vault, 0, 0, abiEncodedOrder, orderSignature);
+    const aliceBalance0After = await token0.balanceOf(alice);
+    const aliceBalance1After = await token1.balanceOf(alice);
+    expect(aliceBalance0After - aliceBalance0Before).to.be.equal("2346332740274337653");
+    expect(aliceBalance1After - aliceBalance1Before).to.be.equal("1651417881126655102");
   });
   it("shouldn't execute if not operator", async () => {
     await expect(
