@@ -251,9 +251,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     uint256 amount0Min,
     uint256 amount1Min
   ) external override onlyRole(ADMIN_ROLE_HASH) nonReentrant {
-    uint256 shares = IERC20(address(this)).balanceOf(_msgSender());
-
-    require(shares > 0, InvalidShares());
+    uint256 shares = IERC20(address(this)).balanceOf(vaultOwner);
     require(to != address(0), ZeroAddress());
 
     /// update fees
@@ -271,7 +269,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     if (totalAmount0 > 0) state.token0.safeTransfer(to, totalAmount0);
     if (totalAmount1 > 0) state.token1.safeTransfer(to, totalAmount1);
 
-    _burn(_msgSender(), shares);
+    _burn(vaultOwner, shares);
     uint256 tokenId = state.currentTokenId;
 
     state.nfpm.burn(state.currentTokenId);

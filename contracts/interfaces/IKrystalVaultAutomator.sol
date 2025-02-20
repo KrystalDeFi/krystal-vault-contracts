@@ -2,4 +2,8 @@
 
 pragma solidity ^0.8.28;
 
-interface IKrystalVaultAutomator {}
+interface IKrystalVaultAutomator {
+  error InvalidOperator();
+
+  error InvalidSignature();
+}

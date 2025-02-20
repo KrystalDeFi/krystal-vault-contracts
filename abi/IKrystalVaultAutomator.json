@@ -1,0 +1,12 @@
+[
+  {
+    "inputs": [],
+    "name": "InvalidOperator",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "InvalidSignature",
+    "type": "error"
+  }
+]

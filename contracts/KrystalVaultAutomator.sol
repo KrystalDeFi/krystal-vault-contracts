@@ -77,7 +77,7 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
 
   function _validateOrder(bytes memory abiEncodedUserOrder, bytes memory orderSignature, address actor) internal view {
     address userAddress = _recover(abiEncodedUserOrder, orderSignature);
-    require(userAddress == actor);
+    require(userAddress == actor, InvalidSignature());
     require(!_cancelledOrder[keccak256(orderSignature)]);
   }
 
