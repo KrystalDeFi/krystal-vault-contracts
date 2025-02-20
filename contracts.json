@@ -1,7 +1,8 @@
 {
   "base_mainnet": {
-    "poolOptimalSwapper": "0x9f25521e4EdD8b942021b00BF872ED12bFC1160f",
-    "krystalVault": "0x538f8fe8403cAA0988874b01bBAd81F888be0bc5",
-    "krystalVaultFactory": "0x03af3BC59A41553d0734138df9bf48fcfcF4aD9B"
+    "poolOptimalSwapper": "0x1bC904DaDbb3DF0D8Eb2Bc4421979b160bC68C2e",
+    "krystalVault": "0x4de44D4E5DBd7ec3AD66124631dB89714eB93189",
+    "krystalVaultAutomator": "0x58655cc956f2CB561264b99C5F696CA2d24a636f",
+    "krystalVaultFactory": "0x2F9FF2B4386E109ab51Ecd4574014Aae31FDd047"
   }
 }

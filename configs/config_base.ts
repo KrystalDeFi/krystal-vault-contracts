@@ -11,12 +11,16 @@ export const BaseConfig: Record<string, IConfig> = {
       enabled: true,
       autoVerifyContract: true,
     },
+    krystalVaultAutomator: {
+      enabled: true,
+      autoVerifyContract: true,
+    },
     krystalVaultFactory: {
       enabled: true,
       autoVerifyContract: true,
     },
     uniswapV3Factory: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
-    krystalVaultAutomator: "0xC1149cDA92B99CD17Ce66D82E599707f91D24BcA",
+    automatorAddress: "0xC1149cDA92B99CD17Ce66D82E599707f91D24BcA",
     platformFeeRecipient: "0xC1149cDA92B99CD17Ce66D82E599707f91D24BcA",
     platformFeeBasisPoint: 50,
     ownerFeeBasisPoint: 50,

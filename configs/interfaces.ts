@@ -18,6 +18,7 @@ export interface IConfig {
     autoVerifyContract?: boolean;
   };
   uniswapV3Factory?: string;
+  automatorAddress?: string;
   // For platform fee recipient
   platformFeeRecipient?: string;
   // For platform fee in basis point
