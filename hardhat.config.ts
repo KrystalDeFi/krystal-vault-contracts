@@ -65,7 +65,7 @@ const config: HardhatUserConfig = {
       allowUnlimitedContractSize: false,
       forking: {
         enabled: true,
-        url: `https://base-mainnet.infura.io/v3/117e1c71984843059b080dc9c9f57c66`,
+        url: `https://base.llamarpc.com`,
         blockNumber: 26313000,
       },
       accounts: {
