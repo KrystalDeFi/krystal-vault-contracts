@@ -18,7 +18,10 @@ jobs:
     if: github.actor != 'Krystal-CICD'
     runs-on: ubuntu-latest    
     steps:
-      - uses: actions/checkout@v3
+      # - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CICD_BOT_TOKEN }}
 
       - name: Check last commit message
         id: check-commit
