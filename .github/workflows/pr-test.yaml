@@ -34,7 +34,7 @@ jobs:
       - name: Create a pull request for the documentation
         uses: peter-evans/create-pull-request@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CICD_BOT_TOKEN }}
           commit-message: Add documentation for PR ${{ github.event.pull_request.number }}
           title: Add documentation for PR ${{ github.event.pull_request.number }}
           body: |
