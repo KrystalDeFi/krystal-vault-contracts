@@ -50,7 +50,10 @@ jobs:
           title: Add documentation for PR ${{ github.event.pull_request.number }}
           body: |
             This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
-          branch: doc/${{ github.event.pull_request.number || github.sha }}
+          
+          branch: doc/me
+          # branch: doc/${{ github.event.pull_request.number || github.sha }}
+          
           # base: ${{ github.head_ref }}
           base: chore/added-test  # for debugging purpose
 
