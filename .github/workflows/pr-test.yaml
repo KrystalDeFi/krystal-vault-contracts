@@ -1,4 +1,4 @@
-name: Run tests on the PR
+name: Run tests on the PR and trigger to push the documentation back
 
 on:  
   push:
@@ -19,14 +19,16 @@ jobs:
       - run: yarn install
       # - run: yarn test
       - name: Create new branch and push the document
-        run: |
-          touch test-file.txt
+        run: |          
           export pr_number=${{ github.event.pull_request.number || github.sha }}
           new_doc_branch=$(echo "doc/${pr_number}")
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git branch -D $new_doc_branch || true
           git checkout -b $new_doc_branch
+          
+          echo "hihi" > doc.md
+
           git add .
           git commit -m "Add documentation for PR ${{ github.event.pull_request.number }}"
           git push origin $new_doc_branch
