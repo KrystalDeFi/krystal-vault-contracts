@@ -16,10 +16,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: yarn install
+      # - run: yarn install     # TODO: enable this back
       # - run: yarn test
       - name: Create new branch and push the document
-        run: |          
+        run: |
+          set -e
+
           export pr_number=${{ github.event.pull_request.number || github.sha }}
           new_doc_branch=$(echo "doc/${pr_number}")
           git config user.name "$GITHUB_ACTOR"
@@ -32,6 +34,8 @@ jobs:
           git add .
           git commit -m "Add documentation for PR ${{ github.event.pull_request.number }}"
           git push origin $new_doc_branch
+          git log --oneline -n 5
+          echo "Pushed the documentation to the branch $new_doc_branch"
 
       - name: Create a pull request for the documentation
         uses: peter-evans/create-pull-request@v3
