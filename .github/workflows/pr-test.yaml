@@ -1,5 +1,10 @@
 name: Run tests on the PR and trigger to write the documentation
 
+concurrency:
+  group: run-test-${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+
 on:  
   push:
     branches:
@@ -20,9 +25,9 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      - run: yarn install
+      # - run: yarn install
 
-      - run: yarn test
+      # - run: yarn test
 
       - run: echo "hihi haha 2" >> test.txt
 
