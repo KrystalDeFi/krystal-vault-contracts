@@ -9,22 +9,33 @@ on:
   push:
     branches:
       - chore/added-test
-    paths:
-      - '**.sol'
   pull_request:
     branches:
       - main
-    paths:
-      - '**.sol'
 
 jobs:
   pr-test:
     runs-on: ubuntu-latest    
     steps:
       - uses: actions/checkout@v3
+
+      - name: Check for contract changes
+        id: check-contracts
+        run: |
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "^contracts/" || echo "::set-output name=changes::false"
+        continue-on-error: true
+
+      - name: Skip if no contract changes
+        if: steps.check-contracts.outputs.changes == 'false'
+        run: |
+          echo "No changes in contracts directory, skipping..."
+          exit 0
+
       - uses: actions/setup-node@v3
+        if: steps.check-contracts.outputs.changes == 'false'
         with:
           node-version: 18
+          
       # - run: yarn install
 
       # - run: yarn test
@@ -32,6 +43,7 @@ jobs:
       - run: echo "hihi haha 2" >> test.txt
 
       - name: Create new branch and push the document
+        if: steps.check-contracts.outputs.changes == 'false'
         run: |
           set -e
 
@@ -39,7 +51,7 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
           git add .
-          git commit -m "Add documentation for PR ${{ github.event.pull_request.number }}"
+          git commit -m "Add documentation for PR"
           git push origin
 
           echo "Pushed the documentation to the branch"
