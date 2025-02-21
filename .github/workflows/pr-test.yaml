@@ -23,7 +23,12 @@ jobs:
           set -e
 
           export pr_number=${{ github.event.pull_request.number || github.sha }}
-          new_doc_branch=$(echo "doc/${pr_number}")
+          
+          # new_doc_branch=$(echo "doc/${pr_number}")
+          
+          new_doc_branch=doc/me
+          # TODO
+
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
           git branch -D $new_doc_branch || true
