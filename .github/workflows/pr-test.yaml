@@ -26,7 +26,7 @@ jobs:
           
           # new_doc_branch=$(echo "doc/${pr_number}")
           
-          new_doc_branch=doc/a1
+          new_doc_branch=doc/a2
           # TODO
 
           git config user.name "$GITHUB_ACTOR"
@@ -37,25 +37,25 @@ jobs:
           echo "hihi" > doc.md
 
           git add .
-          git commit -m "Add documentation for PR ${{ github.event.pull_request.number }}"
+          git commit -m "Add (1) documentation for PR ${{ github.event.pull_request.number }}"
           git push origin $new_doc_branch
           git log --oneline -n 5
           echo "Pushed the documentation to the branch $new_doc_branch"
 
-      - name: Create a pull request for the documentation
-        uses: peter-evans/create-pull-request@v3
-        with:
-          token: ${{ secrets.CICD_BOT_TOKEN }}
-          commit-message: Add documentation for PR ${{ github.event.pull_request.number }}
-          title: Add documentation for PR ${{ github.event.pull_request.number }}
-          body: |
-            This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
+      # - name: Create a pull request for the documentation
+      #   uses: peter-evans/create-pull-request@v3
+      #   with:
+      #     token: ${{ secrets.CICD_BOT_TOKEN }}
+      #     commit-message: Add documentation for PR ${{ github.event.pull_request.number }}
+      #     title: Add documentation for PR ${{ github.event.pull_request.number }}
+      #     body: |
+      #       This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
           
-          base: doc/a1
-          # branch: doc/${{ github.event.pull_request.number || github.sha }}
+      #     base: doc/a1
+      #     # branch: doc/${{ github.event.pull_request.number || github.sha }}
 
-          # base: ${{ github.head_ref }}
-          branch: chore/added-test  # for debugging purpose
+      #     # base: ${{ github.head_ref }}
+      #     branch: chore/added-test  # for debugging purpose
 
 
-          # TODO: request for the comment to be resolved
+      #     # TODO: request for the comment to be resolved
