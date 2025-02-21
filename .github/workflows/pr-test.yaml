@@ -46,10 +46,15 @@ jobs:
 
       - name: Write a comment
         uses: thollander/actions-comment-pull-request@v2
-        if: failure()
+        if: success()
         with:
-          token: ${{ github.token }}
           message: |
             The test run succeeded!
             The documentation has been pushed to the branch.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # with:
+        #   token: ${{ github.token }}
+        #   message: |
+        #     The test run succeeded!
+        #     The documentation has been pushed to the branch.
             
