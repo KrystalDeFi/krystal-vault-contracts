@@ -21,7 +21,7 @@ jobs:
 
       - run: yarn test
 
-      - run: echo "hihi haha" >> test.txt
+      - run: echo "hihi haha 2" >> test.txt
 
       - name: Create new branch and push the document
         run: |
