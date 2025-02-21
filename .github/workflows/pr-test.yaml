@@ -1,10 +1,5 @@
 name: Run tests on the PR and write the documentation
 
-concurrency: 
-  group: pr-test-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
-
 on:  
   push:
     branches:
