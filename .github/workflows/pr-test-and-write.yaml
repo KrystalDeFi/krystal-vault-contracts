@@ -1,0 +1,55 @@
+name: Run tests on the PR and write the documentation
+
+on:  
+  push:
+    branches:
+      - chore/test-and-write
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pr-test:
+    runs-on: ubuntu-latest    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Check last commit message
+        id: check-commit
+        run: |
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          if [[ "$LAST_COMMIT_MSG" == "Add documentation for PR" ]]; then
+            echo "Last commit was documentation, skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+
+      - uses: actions/setup-node@v3
+        if: steps.check-commit.outputs.skip != 'true'
+        with:
+          node-version: 18
+          
+      # - run: yarn install
+
+      # - run: yarn test
+
+      - run: echo "hihi haha 2" >> test.txt
+        if: steps.check-commit.outputs.skip != 'true'
+
+      - name: Create new branch and push the document
+        if: steps.check-commit.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          set -e
+
+          git config user.name "Krystal-CICD"
+          git config user.email "Krystal-CICD@users.noreply.github.com"
+
+          git add .
+          git commit -m "Add documentation for PR"
+          git push https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git HEAD:$GITHUB_REF
+
+          echo "Pushed the documentation to the branch"
