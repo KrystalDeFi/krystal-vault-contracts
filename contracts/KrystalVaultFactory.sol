@@ -51,12 +51,14 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
   }
 
   /// @notice Create a KrystalVault
+  /// @param owner Address of the owner of the KrystalVault
   /// @param nfpm Address of INonfungiblePositionManager
   /// @param params MintParams of INonfungiblePositionManager
   /// @param name Name of the KrystalVault
   /// @param symbol Symbol of the KrystalVault
   /// @return krystalVault Address of KrystalVault created
   function createVault(
+    address owner,
     address nfpm,
     INonfungiblePositionManager.MintParams memory params,
     uint16 _ownerFeeBasisPoint,
@@ -88,7 +90,7 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
     vault.initialize(
       nfpm,
       pool,
-      _msgSender(),
+      owner,
       VaultConfig({
         platformFeeBasisPoint: platformFeeBasisPoint,
         platformFeeRecipient: platformFeeRecipient,
@@ -103,36 +105,46 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
     IERC20(token0).safeTransferFrom(_msgSender(), krystalVault, params.amount0Desired);
     IERC20(token1).safeTransferFrom(_msgSender(), krystalVault, params.amount1Desired);
 
-    vault.mintPosition(_msgSender(), params.tickLower, params.tickUpper, params.amount0Min, params.amount1Min);
+    vault.mintPosition(owner, params.tickLower, params.tickUpper, params.amount0Min, params.amount1Min);
 
-    vaultsByAddress[_msgSender()].push(Vault(_msgSender(), krystalVault, nfpm, params));
+    vaultsByAddress[owner].push(Vault(owner, krystalVault, nfpm, params));
     allVaults.push(krystalVault);
 
-    emit VaultCreated(_msgSender(), krystalVault, nfpm, params, allVaults.length);
+    emit VaultCreated(owner, krystalVault, nfpm, params, allVaults.length);
 
     return krystalVault;
   }
 
+  /// @notice Pause the contract
   function pause() public onlyOwner {
     _pause();
   }
 
+  /// @notice Unpause the contract
   function unpause() public onlyOwner {
     _unpause();
   }
 
+  /// @notice Set the Vault implementation
+  /// @param _krystalVaultImplementation Address of the new KrystalVault implementation
   function setKrystalVaultImplementation(address _krystalVaultImplementation) public onlyOwner {
     krystalVaultImplementation = _krystalVaultImplementation;
   }
 
+  /// @notice Set the KrystalVaultAutomator address
+  /// @param _krystalVaultAutomator Address of the new KrystalVaultAutomator
   function setKrystalVaultAutomator(address _krystalVaultAutomator) public onlyOwner {
     krystalVaultAutomator = _krystalVaultAutomator;
   }
 
+  /// @notice Set the default platform fee recipient
+  /// @param _platformFeeRecipient Address of the new platform fee recipient
   function setPlatformFeeRecipient(address _platformFeeRecipient) public onlyOwner {
     platformFeeRecipient = _platformFeeRecipient;
   }
 
+  /// @notice Set the default platform fee basis point
+  /// @param _platformFeeBasisPoint New platform fee basis point
   function setPlatformFeeBasisPoint(uint16 _platformFeeBasisPoint) public onlyOwner {
     platformFeeBasisPoint = _platformFeeBasisPoint;
   }

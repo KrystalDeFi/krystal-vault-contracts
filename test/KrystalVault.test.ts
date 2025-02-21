@@ -86,6 +86,7 @@ describe("KrystalVaultFactory", function () {
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
     const tx = await factory.connect(alice).createVault(
+      alice.address,
       nfpmAddr,
       {
         token0: await token0.getAddress(),
@@ -119,6 +120,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),
@@ -141,6 +143,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: "0x0000000000000000000000000000000000000000",
@@ -163,6 +166,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),
@@ -185,6 +189,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: "0x0000000000000000000000000000000000000001",
@@ -207,6 +212,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),
@@ -236,6 +242,7 @@ describe("KrystalVaultFactory", function () {
 
     await expect(
       factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),
@@ -328,6 +335,7 @@ describe("KrystalVault", function () {
       await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
       const tx = await factory.connect(alice).createVault(
+        alice.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),
@@ -358,6 +366,7 @@ describe("KrystalVault", function () {
       await token0.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
       await token1.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
       const tx = await factory.connect(bob).createVault(
+        bob.address,
         nfpmAddr,
         {
           token0: await token0.getAddress(),

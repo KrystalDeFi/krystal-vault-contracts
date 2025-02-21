@@ -563,12 +563,17 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     revokeRole(ADMIN_ROLE_HASH, _address);
   }
 
+  /// @dev Safely convert a uint256 to a uint128
+  /// @param x The uint256 to be converted
+  /// @return The uint128 value
   function _uint128Safe(uint256 x) internal pure returns (uint128) {
     assert(x <= type(uint128).max);
 
     return uint128(x);
   }
 
+  /// @notice Get the owner of the KrystalVault
+  /// @return The address of the owner
   function getVaultOwner() external view override returns (address) {
     return vaultOwner;
   }

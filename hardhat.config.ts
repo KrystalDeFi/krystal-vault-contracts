@@ -94,8 +94,10 @@ const config: HardhatUserConfig = {
     target: "ethers-v6",
   },
   docgen: {
-    output: "docs",
-    pages: () => "api.md",
+    outputDir: "docs",
+    theme: "markdown",
+    pages: "files",
+    pageExtension: ".md",
   },
 };
 
