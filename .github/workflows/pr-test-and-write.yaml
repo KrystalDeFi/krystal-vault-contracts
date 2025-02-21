@@ -6,9 +6,9 @@ concurrency:
 
 
 on:  
-  push:
-    branches:
-      - chore/added-test
+  # push:
+  #   branches:
+  #     - chore/added-test
   pull_request:
     branches:
       - main
@@ -41,10 +41,10 @@ jobs:
       # - run: yarn test
 
       - run: echo "hihi haha 2" >> test.txt
-        if: steps.check-commit.outputs.skip != 'true'
+        if: steps.check-commit.outputs.skip != 'true'        
 
       - name: Create new branch and push the document
-        if: steps.check-commit.outputs.skip != 'true'
+        if: github.actor != 'Krystal-CICD'
         env:
           GH_TOKEN: ${{ secrets.CICD_BOT_TOKEN }}
         run: |
