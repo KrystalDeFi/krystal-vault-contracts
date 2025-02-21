@@ -1,4 +1,4 @@
-name: Run tests on the PR and trigger to push the documentation back
+name: Run tests on the PR and trigger to write the documentation
 
 on:  
   push:
@@ -46,4 +46,3 @@ jobs:
             The test run succeeded!
             The documentation has been pushed to the branch.
             
-          
