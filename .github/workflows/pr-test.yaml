@@ -26,7 +26,7 @@ jobs:
           
           # new_doc_branch=$(echo "doc/${pr_number}")
           
-          new_doc_branch=doc/me
+          new_doc_branch=doc/123456
           # TODO
 
           git config user.name "$GITHUB_ACTOR"
@@ -51,9 +51,9 @@ jobs:
           body: |
             This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
           
-          branch: doc/me
+          branch: doc/123456
           # branch: doc/${{ github.event.pull_request.number || github.sha }}
-          
+
           # base: ${{ github.head_ref }}
           base: chore/added-test  # for debugging purpose
 
