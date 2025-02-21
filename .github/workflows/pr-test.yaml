@@ -22,6 +22,8 @@ jobs:
           touch test-file.txt
           export pr_number=${{ github.event.pull_request.number || github.sha }}
           new_doc_branch=$(echo "doc/${pr_number}" | cut -c1-40)
+          git config --global user.email "sre-cicd@krystal.app"
+          git config --global user.name "Krystal CICD"
           git branch -D $new_doc_branch || true
           git checkout -b $new_doc_branch
           git add .
