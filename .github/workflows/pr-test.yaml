@@ -32,7 +32,7 @@ jobs:
           exit 0
 
       - uses: actions/setup-node@v3
-        if: steps.check-contracts.outputs.changes == 'false'
+        if: steps.check-contracts.outputs.changes == 'true'
         with:
           node-version: 18
           
@@ -41,9 +41,10 @@ jobs:
       # - run: yarn test
 
       - run: echo "hihi haha 2" >> test.txt
+        if: steps.check-contracts.outputs.changes == 'true'
 
       - name: Create new branch and push the document
-        if: steps.check-contracts.outputs.changes == 'false'
+        if: steps.check-contracts.outputs.changes == 'true'
         run: |
           set -e
 
