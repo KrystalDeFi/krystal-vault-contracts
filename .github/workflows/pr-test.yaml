@@ -40,7 +40,8 @@ jobs:
           body: |
             This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
           branch: doc/${{ github.event.pull_request.number || github.sha }}
-          base: ${{ github.head_ref }}
+          # base: ${{ github.head_ref }}
+          base: chore/added-test  # for debugging purpose
 
 
           # TODO: request for the comment to be resolved
