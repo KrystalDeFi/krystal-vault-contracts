@@ -20,6 +20,8 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     _grantRole(OPERATOR_ROLE, admin);
   }
 
+  /// @notice Execute a rebalance on a KrystalVault
+  /// @param params ExecuteRebalanceParams
   function executeRebalance(ExecuteRebalanceParams calldata params) external onlyRole(OPERATOR_ROLE) whenNotPaused {
     _validateOrder(params.abiEncodedUserOrder, params.orderSignature, params.vault.getVaultOwner());
     params.vault.rebalance(
@@ -32,6 +34,12 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     );
   }
 
+  /// @notice Execute exit on a KrystalVault
+  /// @param vault KrystalVault to exit from
+  /// @param amount0Min Minimum amount of token0 to receive
+  /// @param amount1Min Minimum amount of token1 to receive
+  /// @param abiEncodedUserOrder ABI encoded user order
+  /// @param orderSignature Signature of the order
   function executeExit(
     IKrystalVault vault,
     uint256 amount0Min,
@@ -44,6 +52,12 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     vault.exit(vaultOwner, amount0Min, amount1Min);
   }
 
+  /// @notice Execute compound on a KrystalVault
+  /// @param vault KrystalVault to compound
+  /// @param amount0Min Minimum amount of token0 to receive
+  /// @param amount1Min Minimum amount of token1 to receive
+  /// @param abiEncodedUserOrder ABI encoded user order
+  /// @param orderSignature Signature of the order
   function executeCompound(
     IKrystalVault vault,
     uint256 amount0Min,
@@ -55,26 +69,40 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     vault.compound(amount0Min, amount1Min);
   }
 
+  /// @dev Validate the order
+  /// @param abiEncodedUserOrder ABI encoded user order
+  /// @param orderSignature Signature of the order
+  /// @param actor Actor of the order
   function _validateOrder(bytes memory abiEncodedUserOrder, bytes memory orderSignature, address actor) internal view {
     address userAddress = _recover(abiEncodedUserOrder, orderSignature);
     require(userAddress == actor, InvalidSignature());
     require(!_cancelledOrder[keccak256(orderSignature)], OrderCancelled());
   }
 
+  /// @notice Cancel an order
+  /// @param abiEncodedUserOrder ABI encoded user order
+  /// @param orderSignature Signature of the order
   function cancelOrder(bytes calldata abiEncodedUserOrder, bytes calldata orderSignature) external {
     _validateOrder(abiEncodedUserOrder, orderSignature, msg.sender);
     _cancelledOrder[keccak256(orderSignature)] = true;
     emit CancelOrder(msg.sender, abiEncodedUserOrder, orderSignature);
   }
 
+  /// @notice Check if an order is cancelled
+  /// @param orderSignature Signature of the order
+  /// @return true if the order is cancelled
   function isOrderCancelled(bytes calldata orderSignature) external view returns (bool) {
     return _cancelledOrder[keccak256(orderSignature)];
   }
 
+  /// @notice Grant operator role
+  /// @param operator Operator address
   function grantOperator(address operator) external onlyRole(DEFAULT_ADMIN_ROLE) {
     grantRole(OPERATOR_ROLE, operator);
   }
 
+  /// @notice Revoke operator role
+  /// @param operator Operator address
   function revokeOperator(address operator) external onlyRole(DEFAULT_ADMIN_ROLE) {
     revokeRole(OPERATOR_ROLE, operator);
   }

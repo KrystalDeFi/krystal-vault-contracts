@@ -16,11 +16,17 @@ abstract contract CustomEIP712 {
     );
   }
 
+  /// @dev Recover signer of EIP712 signature
+  /// @param order ABI encoded order
+  /// @param signature Signature of the order
+  /// @return Signer of the order
   function _recover(bytes memory order, bytes memory signature) internal view returns (address) {
     bytes32 digest = _hashTypedDataV4(StructHash._hash(order));
     return ECDSA.recover(digest, signature);
   }
 
+  /// @dev Convert to typed data hash
+  /// @param structHash Hash of the struct
   function _hashTypedDataV4(bytes32 structHash) internal view virtual returns (bytes32) {
     return toTypedDataHash(DOMAIN_SEPARATOR, structHash);
   }

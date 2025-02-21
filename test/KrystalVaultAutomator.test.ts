@@ -87,6 +87,7 @@ describe("KrystalVaultAutomator", () => {
     await token0.connect(alice).approve(factory, parseEther("1000"));
     await token1.connect(alice).approve(factory, parseEther("1000"));
     const tx = await factory.connect(alice).createVault(
+      alice.address,
       nfpm,
       {
         token0: token0,
@@ -117,6 +118,7 @@ describe("KrystalVaultAutomator", () => {
     await token0.connect(bob).approve(factory, parseEther("1000"));
     await token1.connect(bob).approve(factory, parseEther("1000"));
     await factory.connect(bob).createVault(
+      bob.address,
       nfpm,
       {
         token0: token0,

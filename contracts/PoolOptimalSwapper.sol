@@ -54,6 +54,13 @@ contract PoolOptimalSwapper is IOptimalSwapper, IUniswapV3SwapCallback {
     }
   }
 
+  /// @notice Swap tokens in a Uniswap V3 pool
+  /// @param pool The address of the Uniswap V3 pool
+  /// @param amount0Desired The amount of token0 to be swapped
+  /// @param amount1Desired The amount of token1 to be swapped
+  /// @param tickLower The lower tick of the pool range
+  /// @param tickUpper The upper tick of the pool range
+  /// @param data Additional data for the swap
   function optimalSwap(
     address pool,
     uint256 amount0Desired,

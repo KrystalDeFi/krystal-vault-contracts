@@ -336,6 +336,11 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "owner",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
         "name": "nfpm",
         "type": "address"
       },
