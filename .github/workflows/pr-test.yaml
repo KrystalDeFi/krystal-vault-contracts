@@ -4,13 +4,13 @@ on:
   push:
     branches:
       - chore/added-test
-    paths:
-      - contracts/**
+    # paths:
+    #   - contracts/**
   pull_request:
     branches:
       - main
-    paths:
-      - contracts/**
+    # paths:
+    #   - contracts/**
 
 jobs:
   pr-test:
