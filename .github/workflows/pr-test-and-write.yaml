@@ -18,7 +18,7 @@ jobs:
         id: check-commit
         run: |
           LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-          if [[ "$LAST_COMMIT_MSG" == "Add documentation for PR" ]]; then
+          if [[ "$LAST_COMMIT_MSG" == "Add documentation for this PR" ]]; then
             echo "Last commit was documentation, skipping..."
             echo "skip=true" >> $GITHUB_OUTPUT
           else
@@ -49,7 +49,7 @@ jobs:
           git config user.email "Krystal-CICD@users.noreply.github.com"
 
           git add .
-          git commit -m "Add documentation for PR"
+          git commit -m "Add documentation for this PR"
           git push https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git HEAD:$GITHUB_REF
 
           echo "Pushed the documentation to the branch"
