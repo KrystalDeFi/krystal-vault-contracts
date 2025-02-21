@@ -5,6 +5,7 @@ import "hardhat-abi-exporter";
 import * as dotenv from "dotenv";
 import { HardhatUserConfig } from "hardhat/types/config";
 import "hardhat-contract-sizer";
+import "solidity-docgen";
 
 dotenv.config({
   path: "./.env",
@@ -91,6 +92,10 @@ const config: HardhatUserConfig = {
   typechain: {
     outDir: "typechain-types",
     target: "ethers-v6",
+  },
+  docgen: {
+    output: "docs",
+    pages: () => "api.md",
   },
 };
 
