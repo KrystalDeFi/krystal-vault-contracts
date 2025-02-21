@@ -22,7 +22,11 @@ jobs:
       - name: Check for contract changes
         id: check-contracts
         run: |
-          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q "^contracts/" || echo "::set-output name=changes::false"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -q "^contracts/" || echo "::set-output name=changes::false"
+          else
+            git diff --name-only HEAD^ HEAD | grep -q "^contracts/" || echo "::set-output name=changes::false"
+          fi
         continue-on-error: true
 
       - name: Skip if no contract changes
