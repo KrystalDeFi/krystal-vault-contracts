@@ -1,9 +1,5 @@
 name: Run tests on the PR and trigger to write the documentation
 
-concurrency:
-  group: run-test-${{ github.workflow }}-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
 
 on:  
   push:
