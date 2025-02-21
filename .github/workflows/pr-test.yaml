@@ -9,8 +9,8 @@ on:
   push:
     branches:
       - chore/added-test
-    # paths:
-    #   - contracts/**
+    paths:
+      - '**.sol'
   pull_request:
     branches:
       - main
