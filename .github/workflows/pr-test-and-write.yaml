@@ -8,7 +8,7 @@ concurrency:
 on:  
   push:
     branches:
-      - chore/test-and-write
+      - chore/added-test
   pull_request:
     branches:
       - main
