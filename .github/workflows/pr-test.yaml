@@ -47,15 +47,15 @@ jobs:
       - name: Create new branch and push the document
         if: steps.check-commit.outputs.skip != 'true'        
         env:
-            GH_TOKEN: ${{ secrets.CICD_BOT_TOKEN }}
-          run: |
-            set -e
+          GH_TOKEN: ${{ secrets.CICD_BOT_TOKEN }}
+        run: |
+          set -e
 
-            git config user.name "Krystal-CICD"
-            git config user.email "Krystal-CICD@users.noreply.github.com"
+          git config user.name "Krystal-CICD"
+          git config user.email "Krystal-CICD@users.noreply.github.com"
 
-            git add .
-            git commit -m "Add documentation for this PR"
-            git push https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git HEAD:$GITHUB_REF
+          git add .
+          git commit -m "Add documentation for this PR"
+          git push https://$GH_TOKEN@github.com/$GITHUB_REPOSITORY.git HEAD:$GITHUB_REF
 
-            echo "Pushed the documentation to the branch"
+          echo "Pushed the documentation to the branch"
