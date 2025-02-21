@@ -34,7 +34,7 @@ jobs:
           git branch -D $new_doc_branch || true
           git checkout -b $new_doc_branch
           
-          echo "hihi" > doc.md
+          echo "hihi haha" > doc.md
 
           git add .
           git commit -m "Add (1) documentation for PR ${{ github.event.pull_request.number }}"
