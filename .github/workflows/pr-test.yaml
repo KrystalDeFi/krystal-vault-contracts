@@ -1,6 +1,9 @@
 name: Run tests on the PR
 
 on:
+  push:
+    branches:
+      - chore/added-test
   pull_request:
     branches:
       - main
