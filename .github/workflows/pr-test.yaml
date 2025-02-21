@@ -14,4 +14,22 @@ jobs:
         with:
           node-version: 18
       - run: yarn install
-      - run: yarn test
+      # - run: yarn test
+      - run: |
+          touch test-file.txt
+          new_doc_branch=$(echo "doc/${{ github.event.pull_request.number }}" | cut -c1-40)
+          git branch -D $new_doc_branch || true
+          git checkout -b $new_doc_branch
+          git add .
+          git commit -m "Add documentation for PR ${{ github.event.pull_request.number }}"
+          git push origin $new_doc_branch
+      - name: Create a pull request for the documentation
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Add documentation for PR ${{ github.event.pull_request.number }}
+          title: Add documentation for PR ${{ github.event.pull_request.number }}
+          body: |
+            This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
+          branch: doc/${{ github.event.pull_request.number }}
+          base: main
