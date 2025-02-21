@@ -17,9 +17,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
-      # - run: yarn install     # TODO: enable this back
-      # - run: yarn test
-      - run: echo "hihi haha" > test.txt
+      - run: yarn install
+
+      - run: yarn test
+
+      - run: echo "hihi haha" >> test.txt
+
       - name: Create new branch and push the document
         run: |
           set -e
@@ -32,3 +35,14 @@ jobs:
           git push origin
 
           echo "Pushed the documentation to the branch"
+
+      - name: Write a comment
+        uses: thollander/actions-comment-pull-request@v2
+        if: failure()
+        with:
+          token: ${{ github.token }}
+          message: |
+            The test run succeeded!
+            The documentation has been pushed to the branch.
+            
+          
