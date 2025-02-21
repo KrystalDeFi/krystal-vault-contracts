@@ -4,9 +4,9 @@ on:
   push:
     branches:
       - chore/added-test
-  # pull_request:
-  #   branches:
-  #     - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   pr-test:
@@ -18,29 +18,13 @@ jobs:
         with:
           token: ${{ secrets.CICD_BOT_TOKEN }}
 
-      - name: Check last commit message
-        id: check-commit
-        run: |
-          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
-          if [[ "$LAST_COMMIT_MSG" == "Add documentation for this PR" ]]; then
-            echo "Last commit was documentation, skipping..."
-            echo "skip=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip=false" >> $GITHUB_OUTPUT
-          fi
-
-
       - uses: actions/setup-node@v3
-        if: steps.check-commit.outputs.skip != 'true'
         with:
           node-version: 18
           
-      # - run: yarn install
+      - run: yarn install
 
-      # - run: yarn test
-
-      - run: echo "hihi haha 2" >> test.txt
-        if: steps.check-commit.outputs.skip != 'true'        
+      - run: yarn test
 
       - name: Create new branch and push the document        
         env:
@@ -48,8 +32,8 @@ jobs:
         run: |
           set -e
 
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+          git config user.name "Krystal-CICD"
+          git config user.email "Krystal-CICD@users.noreply.github.com"
 
           git add .
           git commit -m "Add documentation for PR"
