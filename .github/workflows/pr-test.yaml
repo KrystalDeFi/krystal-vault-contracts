@@ -20,8 +20,8 @@ jobs:
       # - run: yarn test
       - run: |
           touch test-file.txt
-          export pr_number=${{ github.event.pull_request.number }}
-          new_doc_branch=$(echo "doc/$pr_number" | cut -c1-40)
+          export pr_number=${{ github.event.pull_request.number || github.sha }}
+          new_doc_branch=$(echo "doc/${pr_number}" | cut -c1-40)
           git branch -D $new_doc_branch || true
           git checkout -b $new_doc_branch
           git add .
@@ -36,7 +36,7 @@ jobs:
           body: |
             This pull request adds documentation for PR ${{ github.event.pull_request.number }}.
           branch: doc/${{ github.event.pull_request.number }}
-          base: main
+          base: ${{ github.head_ref }}
 
 
           # TODO: request for the comment to be resolved
