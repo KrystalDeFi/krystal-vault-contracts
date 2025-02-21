@@ -19,25 +19,20 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check for contract changes
-        id: check-contracts
+      - name: Check last commit message
+        id: check-commit
         run: |
-          git fetch --unshallow || true
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | grep -q "^contracts/" || echo "::set-output name=changes::false"
+          LAST_COMMIT_MSG=$(git log -1 --pretty=%B)
+          if [[ "$LAST_COMMIT_MSG" == "Add documentation for PR" ]]; then
+            echo "Last commit was documentation, skipping..."
+            echo "skip=true" >> $GITHUB_OUTPUT
           else
-            git diff --name-only HEAD^ HEAD | grep -q "^contracts/" || echo "::set-output name=changes::false"
+            echo "skip=false" >> $GITHUB_OUTPUT
           fi
-        continue-on-error: true
 
-      - name: Skip if no contract changes
-        if: steps.check-contracts.outputs.changes == 'false'
-        run: |
-          echo "No changes in contracts directory, skipping..."
-          exit 0
 
       - uses: actions/setup-node@v3
-        if: steps.check-contracts.outputs.changes == 'true'
+        if: steps.check-commit.outputs.skip != 'true'
         with:
           node-version: 18
           
@@ -46,10 +41,10 @@ jobs:
       # - run: yarn test
 
       - run: echo "hihi haha 2" >> test.txt
-        if: steps.check-contracts.outputs.changes == 'true'
+        if: steps.check-commit.outputs.skip != 'true'
 
       - name: Create new branch and push the document
-        if: steps.check-contracts.outputs.changes == 'true'
+        if: steps.check-commit.outputs.skip != 'true'
         run: |
           set -e
 
