@@ -32,11 +32,13 @@ jobs:
           git config user.name "Krystal-CICD"
           git config user.email "Krystal-CICD@users.noreply.github.com"
 
+          CURRENT_BRANCH=$(echo ${GITHUB_HEAD_REF})
+          git checkout $CURRENT_BRANCH
+          git pull origin $CURRENT_BRANCH
+
           git add .
           git commit -m "Add documentation for PR"
 
-          CURRENT_BRANCH=$(echo ${GITHUB_HEAD_REF})
-          git checkout -b $CURRENT_BRANCH
           git push origin $CURRENT_BRANCH
 
           echo "Pushed the documentation to the branch"
