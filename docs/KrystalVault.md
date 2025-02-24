@@ -87,7 +87,7 @@ modifier onlyVaultFactory()
 ### mintPosition
 
 ```solidity
-function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
 ```
 
 Mint a new position
@@ -439,18 +439,4 @@ Get the owner of the KrystalVault
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | address | The address of the owner |
-
-### getState
-
-```solidity
-function getState() external view returns (struct IKrystalVault.VaultState)
-```
-
-Get the state of the KrystalVault
-
-#### Return Values
-
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | struct IKrystalVault.VaultState | The state of the KrystalVault |
 

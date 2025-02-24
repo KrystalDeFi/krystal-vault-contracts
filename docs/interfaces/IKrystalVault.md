@@ -73,7 +73,7 @@ event FeeCollected(address recipient, enum IKrystalVault.FeeType feeType, uint25
 ### mintPosition
 
 ```solidity
-function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
 ```
 
 ### deposit
@@ -142,9 +142,9 @@ function revokeAdminRole(address _address) external
 function getVaultOwner() external view returns (address)
 ```
 
-### getState
+### state
 
 ```solidity
-function getState() external view returns (struct IKrystalVault.VaultState)
+function state() external view returns (contract IUniswapV3Pool pool, contract INonfungiblePositionManager nfpm, contract IERC20 token0, contract IERC20 token1, uint256 currentTokenId, int24 currentTickLower, int24 currentTickUpper, int24 tickSpacing, uint24 fee)
 ```
 

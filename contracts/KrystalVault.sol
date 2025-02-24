@@ -35,7 +35,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   address public vaultFactory;
   address public vaultOwner;
 
-  VaultState public state;
+  VaultState public override state;
   VaultConfig public config;
   IOptimalSwapper public optimalSwapper;
 
@@ -110,7 +110,6 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     uint256 amount1Min
   )
     external
-    payable
     override
     onlyVaultFactory
     returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
@@ -610,11 +609,5 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   /// @return The address of the owner
   function getVaultOwner() external view override returns (address) {
     return vaultOwner;
-  }
-
-  /// @notice Get the state of the KrystalVault
-  /// @return The state of the KrystalVault
-  function getState() external view override returns (VaultState memory) {
-    return state;
   }
 }

@@ -61,7 +61,7 @@ interface IKrystalVault is IKrystalVaultCommon {
     int24 tickUpper,
     uint256 amount0Min,
     uint256 amount1Min
-  ) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
+  ) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
 
   function deposit(
     uint256 amount0Desired,
@@ -104,5 +104,15 @@ interface IKrystalVault is IKrystalVaultCommon {
 
   function getVaultOwner() external view returns (address);
 
-  function getState() external view returns (VaultState memory);
+  function state() external view returns (
+    IUniswapV3Pool pool,
+    INonfungiblePositionManager nfpm,
+    IERC20 token0,
+    IERC20 token1,
+    uint256 currentTokenId,
+    int24 currentTickLower,
+    int24 currentTickUpper,
+    int24 tickSpacing,
+    uint24 fee
+  );
 }
