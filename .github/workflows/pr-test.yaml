@@ -1,12 +1,9 @@
 name: Run tests on the PR and write the documentation
 
 on:  
-  push:
-    branches:
-      - chore/added-test
   pull_request:
     branches:
-      - main
+      - master
 
 jobs:
   pr-test:
