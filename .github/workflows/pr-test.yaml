@@ -1,0 +1,43 @@
+name: Run tests on the PR and write the documentation
+
+on:  
+  push:
+    branches:
+      - chore/added-test
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  pr-test:
+    if: github.actor != 'Krystal-CICD'
+    runs-on: ubuntu-latest    
+    steps:
+      # - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.CICD_BOT_TOKEN }}
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+          
+      - run: yarn install
+
+      - run: yarn test
+
+      - name: Create new branch and push the document        
+        env:
+          GH_TOKEN: ${{ secrets.CICD_BOT_TOKEN }}
+        run: |
+          set -e
+
+          git config user.name "Krystal-CICD"
+          git config user.email "Krystal-CICD@users.noreply.github.com"
+
+          git add .
+          git commit -m "Add documentation for PR"
+          git push origin
+
+          echo "Pushed the documentation to the branch"
+
