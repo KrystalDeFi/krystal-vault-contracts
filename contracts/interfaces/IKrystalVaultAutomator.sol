@@ -21,6 +21,7 @@ interface IKrystalVaultAutomator {
     uint256 decreaseAmount1Min;
     uint256 amount0Min;
     uint256 amount1Min;
+    uint16 automatorFee;
     bytes abiEncodedUserOrder;
     bytes orderSignature;
   }
@@ -31,6 +32,7 @@ interface IKrystalVaultAutomator {
     IKrystalVault vault,
     uint256 amount0Min,
     uint256 amount1Min,
+    uint16 automatorFee,
     bytes calldata abiEncodedUserOrder,
     bytes calldata orderSignature
   ) external;
@@ -39,6 +41,7 @@ interface IKrystalVaultAutomator {
     IKrystalVault vault,
     uint256 amount0Min,
     uint256 amount1Min,
+    uint16 automatorFee,
     bytes calldata abiEncodedUserOrder,
     bytes calldata orderSignature
   ) external;

@@ -19,9 +19,22 @@ struct Vault {
 event VaultCreated(address owner, address krystalVault, address nfpm, struct INonfungiblePositionManager.MintParams params, uint256 vaultsLength)
 ```
 
+### CreateVaultParams
+
+```solidity
+struct CreateVaultParams {
+  address owner;
+  address nfpm;
+  struct INonfungiblePositionManager.MintParams mintParams;
+  uint16 ownerFeeBasisPoint;
+  string name;
+  string symbol;
+}
+```
+
 ### createVault
 
 ```solidity
-function createVault(address owner, address nfpm, struct INonfungiblePositionManager.MintParams params, uint16 ownerFeeBasisPoint, string name, string symbol) external returns (address krystalVault)
+function createVault(struct IKrystalVaultFactory.CreateVaultParams params) external payable returns (address krystalVault)
 ```
 

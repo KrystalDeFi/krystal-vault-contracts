@@ -284,6 +284,11 @@
         "type": "uint256"
       },
       {
+        "internalType": "uint16",
+        "name": "automatorFee",
+        "type": "uint16"
+      },
+      {
         "internalType": "bytes",
         "name": "abiEncodedUserOrder",
         "type": "bytes"
@@ -315,6 +320,11 @@
         "internalType": "uint256",
         "name": "amount1Min",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "automatorFee",
+        "type": "uint16"
       },
       {
         "internalType": "bytes",
@@ -370,6 +380,11 @@
             "internalType": "uint256",
             "name": "amount1Min",
             "type": "uint256"
+          },
+          {
+            "internalType": "uint16",
+            "name": "automatorFee",
+            "type": "uint16"
           },
           {
             "internalType": "bytes",

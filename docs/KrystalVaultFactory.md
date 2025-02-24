@@ -59,7 +59,7 @@ constructor(address uniswapV3FactoryAddress, address krystalVaultImplementationA
 ### createVault
 
 ```solidity
-function createVault(address owner, address nfpm, struct INonfungiblePositionManager.MintParams params, uint16 _ownerFeeBasisPoint, string name, string symbol) external returns (address krystalVault)
+function createVault(struct IKrystalVaultFactory.CreateVaultParams params) external payable returns (address vault)
 ```
 
 Create a KrystalVault
@@ -68,18 +68,13 @@ Create a KrystalVault
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| owner | address | Address of the owner of the KrystalVault |
-| nfpm | address | Address of INonfungiblePositionManager |
-| params | struct INonfungiblePositionManager.MintParams | MintParams of INonfungiblePositionManager |
-| _ownerFeeBasisPoint | uint16 |  |
-| name | string | Name of the KrystalVault |
-| symbol | string | Symbol of the KrystalVault |
+| params | struct IKrystalVaultFactory.CreateVaultParams | CreateVaultParams parameter for vault creation |
 
 #### Return Values
 
 | Name | Type | Description |
 | ---- | ---- | ----------- |
-| krystalVault | address | Address of KrystalVault created |
+| vault | address | Address of KrystalVault created |
 
 ### pause
 

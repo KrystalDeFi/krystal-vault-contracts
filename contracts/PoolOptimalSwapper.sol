@@ -60,14 +60,13 @@ contract PoolOptimalSwapper is IOptimalSwapper, IUniswapV3SwapCallback {
   /// @param amount1Desired The amount of token1 to be swapped
   /// @param tickLower The lower tick of the pool range
   /// @param tickUpper The upper tick of the pool range
-  /// @param data Additional data for the swap
   function optimalSwap(
     address pool,
     uint256 amount0Desired,
     uint256 amount1Desired,
     int24 tickLower,
     int24 tickUpper,
-    bytes calldata data
+    bytes calldata
   ) external override {
     IERC20 token0 = IERC20(IUniswapV3Pool(pool).token0());
     IERC20 token1 = IERC20(IUniswapV3Pool(pool).token1());

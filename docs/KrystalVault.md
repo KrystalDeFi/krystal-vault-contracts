@@ -87,7 +87,7 @@ modifier onlyVaultFactory()
 ### mintPosition
 
 ```solidity
-function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 amount0Min, uint256 amount1Min) external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
 ```
 
 Mint a new position
@@ -105,7 +105,7 @@ Mint a new position
 ### deposit
 
 ```solidity
-function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external returns (uint256 shares)
+function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external payable returns (uint256 shares)
 ```
 
 Deposit tokens
@@ -153,7 +153,7 @@ Withdraw liquidity tokens and receive the tokens
 ### exit
 
 ```solidity
-function exit(address to, uint256 amount0Min, uint256 amount1Min) external
+function exit(address to, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 Exit the position and redeem all tokens to balance
@@ -165,11 +165,12 @@ Exit the position and redeem all tokens to balance
 | to | address | Address to which redeemed pool assets are sent |
 | amount0Min | uint256 | Minimum amount of token0 to receive |
 | amount1Min | uint256 | Minimum amount of token1 to receive |
+| automatorFee | uint16 |  |
 
 ### rebalance
 
 ```solidity
-function rebalance(int24 _newTickLower, int24 _newTickUpper, uint256 decreasedAmount0Min, uint256 decreasedAmount1Min, uint256 amount0Min, uint256 amount1Min) external
+function rebalance(int24 _newTickLower, int24 _newTickUpper, uint256 decreasedAmount0Min, uint256 decreasedAmount1Min, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 Rebalance position to new range
@@ -184,11 +185,12 @@ Rebalance position to new range
 | decreasedAmount1Min | uint256 | min amount1 returned for shares of liq |
 | amount0Min | uint256 | min amount0 returned for shares of liq |
 | amount1Min | uint256 | min amount1 returned for shares of liq |
+| automatorFee | uint16 | fee for automator contract |
 
 ### compound
 
 ```solidity
-function compound(uint256 amount0Min, uint256 amount1Min) external
+function compound(uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 Compound fees
@@ -199,11 +201,12 @@ Compound fees
 | ---- | ---- | ----------- |
 | amount0Min | uint256 | Minimum amount of token0 to receive |
 | amount1Min | uint256 | Minimum amount of token1 to receive |
+| automatorFee | uint16 | Fee for automator contract |
 
 ### _collectFees
 
 ```solidity
-function _collectFees() internal returns (uint128 liquidity)
+function _collectFees(uint16 automatorFeeBasisPoint) internal returns (uint128 liquidity)
 ```
 
 Collect fees
@@ -436,4 +439,18 @@ Get the owner of the KrystalVault
 | Name | Type | Description |
 | ---- | ---- | ----------- |
 | [0] | address | The address of the owner |
+
+### getState
+
+```solidity
+function getState() external view returns (struct IKrystalVault.VaultState)
+```
+
+Get the state of the KrystalVault
+
+#### Return Values
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| [0] | struct IKrystalVault.VaultState | The state of the KrystalVault |
 

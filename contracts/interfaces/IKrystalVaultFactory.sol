@@ -22,12 +22,14 @@ interface IKrystalVaultFactory is IKrystalVaultCommon {
     uint256 vaultsLength
   );
 
-  function createVault(
-    address owner,
-    address nfpm,
-    INonfungiblePositionManager.MintParams memory params,
-    uint16 ownerFeeBasisPoint,
-    string memory name,
-    string memory symbol
-  ) external returns (address krystalVault);
+  struct CreateVaultParams {
+    address owner;
+    address nfpm;
+    INonfungiblePositionManager.MintParams mintParams;
+    uint16 ownerFeeBasisPoint;
+    string name;
+    string symbol;
+  }
+
+  function createVault(CreateVaultParams calldata params) external payable returns (address krystalVault);
 }

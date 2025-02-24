@@ -37,6 +37,7 @@ struct ExecuteRebalanceParams {
   uint256 decreaseAmount1Min;
   uint256 amount0Min;
   uint256 amount1Min;
+  uint16 automatorFee;
   bytes abiEncodedUserOrder;
   bytes orderSignature;
 }
@@ -51,13 +52,13 @@ function executeRebalance(struct IKrystalVaultAutomator.ExecuteRebalanceParams p
 ### executeExit
 
 ```solidity
-function executeExit(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, bytes abiEncodedUserOrder, bytes orderSignature) external
+function executeExit(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee, bytes abiEncodedUserOrder, bytes orderSignature) external
 ```
 
 ### executeCompound
 
 ```solidity
-function executeCompound(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, bytes abiEncodedUserOrder, bytes orderSignature) external
+function executeCompound(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee, bytes abiEncodedUserOrder, bytes orderSignature) external
 ```
 
 ### cancelOrder

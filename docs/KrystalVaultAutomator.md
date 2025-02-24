@@ -31,7 +31,7 @@ Execute a rebalance on a KrystalVault
 ### executeExit
 
 ```solidity
-function executeExit(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, bytes abiEncodedUserOrder, bytes orderSignature) external
+function executeExit(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee, bytes abiEncodedUserOrder, bytes orderSignature) external
 ```
 
 Execute exit on a KrystalVault
@@ -43,13 +43,14 @@ Execute exit on a KrystalVault
 | vault | contract IKrystalVault | KrystalVault to exit from |
 | amount0Min | uint256 | Minimum amount of token0 to receive |
 | amount1Min | uint256 | Minimum amount of token1 to receive |
+| automatorFee | uint16 |  |
 | abiEncodedUserOrder | bytes | ABI encoded user order |
 | orderSignature | bytes | Signature of the order |
 
 ### executeCompound
 
 ```solidity
-function executeCompound(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, bytes abiEncodedUserOrder, bytes orderSignature) external
+function executeCompound(contract IKrystalVault vault, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee, bytes abiEncodedUserOrder, bytes orderSignature) external
 ```
 
 Execute compound on a KrystalVault
@@ -61,6 +62,7 @@ Execute compound on a KrystalVault
 | vault | contract IKrystalVault | KrystalVault to compound |
 | amount0Min | uint256 | Minimum amount of token0 to receive |
 | amount1Min | uint256 | Minimum amount of token1 to receive |
+| automatorFee | uint16 |  |
 | abiEncodedUserOrder | bytes | ABI encoded user order |
 | orderSignature | bytes | Signature of the order |
 

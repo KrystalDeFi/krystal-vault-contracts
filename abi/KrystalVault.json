@@ -314,80 +314,6 @@
   },
   {
     "anonymous": false,
-    "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "nfpm",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "uint256",
-        "name": "oldTokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "newTokenId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "liquidity",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount0Added",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount1Added",
-        "type": "uint256"
-      }
-    ],
-    "name": "ChangeRange",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "int24",
-        "name": "tick",
-        "type": "int24"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "token0Balance",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "token1Balance",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "totalSupply",
-        "type": "uint256"
-      }
-    ],
-    "name": "Compound",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
     "inputs": [],
     "name": "EIP712DomainChanged",
     "type": "event"
@@ -403,7 +329,7 @@
       },
       {
         "indexed": false,
-        "internalType": "uint8",
+        "internalType": "enum IKrystalVault.FeeType",
         "name": "feeType",
         "type": "uint8"
       },
@@ -540,6 +466,37 @@
     "anonymous": false,
     "inputs": [
       {
+        "indexed": false,
+        "internalType": "int24",
+        "name": "tick",
+        "type": "int24"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "token0Balance",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "token1Balance",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "totalSupply",
+        "type": "uint256"
+      }
+    ],
+    "name": "VaultCompound",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
         "indexed": true,
         "internalType": "address",
         "name": "shareholder",
@@ -627,6 +584,49 @@
       }
     ],
     "name": "VaultPositionMint",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nfpm",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "oldTokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "newTokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "liquidity",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount0Added",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "amount1Added",
+        "type": "uint256"
+      }
+    ],
+    "name": "VaultRebalance",
     "type": "event"
   },
   {
@@ -783,6 +783,11 @@
         "internalType": "uint256",
         "name": "amount1Min",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "automatorFee",
+        "type": "uint16"
       }
     ],
     "name": "compound",
@@ -875,7 +880,7 @@
         "type": "uint256"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -937,6 +942,11 @@
         "internalType": "uint256",
         "name": "amount1Min",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "automatorFee",
+        "type": "uint16"
       }
     ],
     "name": "exit",
@@ -981,6 +991,66 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getState",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "contract IUniswapV3Pool",
+            "name": "pool",
+            "type": "address"
+          },
+          {
+            "internalType": "contract INonfungiblePositionManager",
+            "name": "nfpm",
+            "type": "address"
+          },
+          {
+            "internalType": "contract IERC20",
+            "name": "token0",
+            "type": "address"
+          },
+          {
+            "internalType": "contract IERC20",
+            "name": "token1",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "currentTokenId",
+            "type": "uint256"
+          },
+          {
+            "internalType": "int24",
+            "name": "currentTickLower",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "currentTickUpper",
+            "type": "int24"
+          },
+          {
+            "internalType": "int24",
+            "name": "tickSpacing",
+            "type": "int24"
+          },
+          {
+            "internalType": "uint24",
+            "name": "fee",
+            "type": "uint24"
+          }
+        ],
+        "internalType": "struct IKrystalVault.VaultState",
+        "name": "",
+        "type": "tuple"
       }
     ],
     "stateMutability": "view",
@@ -1188,7 +1258,7 @@
         "type": "uint256"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -1310,6 +1380,11 @@
         "internalType": "uint256",
         "name": "amount1Min",
         "type": "uint256"
+      },
+      {
+        "internalType": "uint16",
+        "name": "automatorFee",
+        "type": "uint16"
       }
     ],
     "name": "rebalance",
