@@ -14,6 +14,7 @@ import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 import { KrystalVault } from "./KrystalVault.sol";
 
 import "./interfaces/IKrystalVaultFactory.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
 
 /// @title KrystalVaultFactory
 contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMulticall {
@@ -51,68 +52,74 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
   }
 
   /// @notice Create a KrystalVault
-  /// @param owner Address of the owner of the KrystalVault
-  /// @param nfpm Address of INonfungiblePositionManager
-  /// @param params MintParams of INonfungiblePositionManager
-  /// @param name Name of the KrystalVault
-  /// @param symbol Symbol of the KrystalVault
-  /// @return krystalVault Address of KrystalVault created
+  /// @param params CreateVaultParams parameter for vault creation
+  /// @return vault Address of KrystalVault created
   function createVault(
-    address owner,
-    address nfpm,
-    INonfungiblePositionManager.MintParams memory params,
-    uint16 _ownerFeeBasisPoint,
-    string memory name,
-    string memory symbol
-  ) external override whenNotPaused returns (address krystalVault) {
-    require(params.token0 != params.token1, IdenticalAddresses());
-    require(_ownerFeeBasisPoint <= 1000, InvalidOwnerFee());
+    CreateVaultParams calldata params
+  ) external payable override whenNotPaused returns (address vault) {
+    require(params.mintParams.token0 != params.mintParams.token1, IdenticalAddresses());
+    require(params.ownerFeeBasisPoint <= 1000, InvalidOwnerFee());
 
-    (address token0, address token1) = params.token0 < params.token1
-      ? (params.token0, params.token1)
-      : (params.token1, params.token0);
+    (address token0, address token1) = params.mintParams.token0 < params.mintParams.token1
+      ? (params.mintParams.token0, params.mintParams.token1)
+      : (params.mintParams.token1, params.mintParams.token0);
 
     require(token0 != address(0), ZeroAddress());
     require(token1 != address(0), ZeroAddress());
 
-    int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(params.fee);
+    int24 tickSpacing = uniswapV3Factory.feeAmountTickSpacing(params.mintParams.fee);
 
     require(tickSpacing != 0, InvalidFee());
 
-    address pool = uniswapV3Factory.getPool(token0, token1, params.fee);
+    address pool = uniswapV3Factory.getPool(token0, token1, params.mintParams.fee);
     if (pool == address(0)) {
       revert PoolNotFound();
     }
 
-    krystalVault = Clones.clone(krystalVaultImplementation);
-    KrystalVault vault = KrystalVault(krystalVault);
-
-    vault.initialize(
-      nfpm,
+    vault = Clones.clone(krystalVaultImplementation);
+    KrystalVault(vault).initialize(
+      params.nfpm,
       pool,
-      owner,
+      params.owner,
       VaultConfig({
         platformFeeBasisPoint: platformFeeBasisPoint,
         platformFeeRecipient: platformFeeRecipient,
-        ownerFeeBasisPoint: _ownerFeeBasisPoint
+        ownerFeeBasisPoint: params.ownerFeeBasisPoint
       }),
-      name,
-      symbol,
+      params.name,
+      params.symbol,
       optimalSwapper,
       krystalVaultAutomator
     );
+    address weth = INonfungiblePositionManager(params.nfpm).WETH9();
 
-    IERC20(token0).safeTransferFrom(_msgSender(), krystalVault, params.amount0Desired);
-    IERC20(token1).safeTransferFrom(_msgSender(), krystalVault, params.amount1Desired);
+    if (token0 == weth && msg.value > 0) {
+      require(msg.value == params.mintParams.amount0Desired, InvalidAmount());
+      IWETH9(weth).deposit{ value: msg.value }();
+      IWETH9(weth).transfer(vault, msg.value);
+    }else {
+      IERC20(token0).safeTransferFrom(_msgSender(), vault, params.mintParams.amount0Desired);
+    }
+    if (token1 == weth && msg.value > 0) {
+      require(msg.value == params.mintParams.amount0Desired, InvalidAmount());
+      IWETH9(weth).deposit{ value: msg.value }();
+      IWETH9(weth).transfer(vault, msg.value);
+    } else {
+      IERC20(token1).safeTransferFrom(_msgSender(), vault, params.mintParams.amount1Desired);
+    }
 
-    vault.mintPosition(owner, params.tickLower, params.tickUpper, params.amount0Min, params.amount1Min);
+    KrystalVault(vault).mintPosition(
+      params.owner,
+      params.mintParams.tickLower,
+      params.mintParams.tickUpper,
+      params.mintParams.amount0Min,
+      params.mintParams.amount1Min
+    );
 
-    vaultsByAddress[owner].push(Vault(owner, krystalVault, nfpm, params));
-    allVaults.push(krystalVault);
+    vaultsByAddress[params.owner].push(Vault(params.owner, vault, params.nfpm, params.mintParams));
+    allVaults.push(vault);
 
-    emit VaultCreated(owner, krystalVault, nfpm, params, allVaults.length);
-
-    return krystalVault;
+    emit VaultCreated(params.owner, vault, params.nfpm, params.mintParams, allVaults.length);
   }
 
   /// @notice Pause the contract

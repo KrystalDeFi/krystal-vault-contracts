@@ -86,10 +86,10 @@ describe("KrystalVaultAutomator", () => {
 
     await token0.connect(alice).approve(factory, parseEther("1000"));
     await token1.connect(alice).approve(factory, parseEther("1000"));
-    const tx = await factory.connect(alice).createVault(
-      alice.address,
-      nfpm,
-      {
+    const tx = await factory.connect(alice).createVault({
+      owner: alice.address,
+      nfpm: nfpm,
+      mintParams: {
         token0: token0,
         token1: token1,
         fee: 3000,
@@ -102,10 +102,10 @@ describe("KrystalVaultAutomator", () => {
         recipient: alice,
         deadline: (await blockNumber()) + 100,
       },
-      NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-      "Vault Name",
-      "VAULT",
-    );
+      ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+      name: "Vault Name",
+      symbol: "VAULT",
+    });
 
     const receipt = await tx.wait();
     // @ts-ignore
@@ -117,10 +117,10 @@ describe("KrystalVaultAutomator", () => {
 
     await token0.connect(bob).approve(factory, parseEther("1000"));
     await token1.connect(bob).approve(factory, parseEther("1000"));
-    await factory.connect(bob).createVault(
-      bob.address,
-      nfpm,
-      {
+    await factory.connect(bob).createVault({
+      owner: bob.address,
+      nfpm: nfpm,
+      mintParams: {
         token0: token0,
         token1: token1,
         fee: 3000,
@@ -133,10 +133,10 @@ describe("KrystalVaultAutomator", () => {
         recipient: alice,
         deadline: (await blockNumber()) + 100,
       },
-      NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-      "Vault Name",
-      "VAULT",
-    );
+      ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+      name: "Vault Name",
+      symbol: "VAULT",
+    });
 
     const network = await ethers.provider.getNetwork();
     const sEncoder = await ethers.deployContract("StructHashEncoder");
@@ -161,6 +161,7 @@ describe("KrystalVaultAutomator", () => {
       decreaseAmount1Min: 0,
       amount0Min: 0,
       amount1Min: 0,
+      automatorFee: 100,
       abiEncodedUserOrder: abiEncodedOrder,
       orderSignature: orderSignature,
     });
@@ -172,7 +173,7 @@ describe("KrystalVaultAutomator", () => {
       expect(pos[1]).to.be.equal(BigInt("2346332740274337647"));
       expect(pos[2]).to.be.equal(BigInt("1651417881126655081"));
     }
-    await automator.connect(operator).executeCompound(vault, 0, 0, abiEncodedOrder, orderSignature);
+    await automator.connect(operator).executeCompound(vault, 0, 0, 0, abiEncodedOrder, orderSignature);
     {
       const state = await vault.state();
       const pos = await vault.getBasePosition();
@@ -181,7 +182,7 @@ describe("KrystalVaultAutomator", () => {
     }
     const aliceBalance0Before = await token0.balanceOf(alice);
     const aliceBalance1Before = await token1.balanceOf(alice);
-    await automator.connect(operator).executeExit(vault, 0, 0, abiEncodedOrder, orderSignature);
+    await automator.connect(operator).executeExit(vault, 0, 0, 0, abiEncodedOrder, orderSignature);
     const aliceBalance0After = await token0.balanceOf(alice);
     const aliceBalance1After = await token1.balanceOf(alice);
     expect(aliceBalance0After - aliceBalance0Before).to.be.equal("2346332740274337653");
@@ -197,6 +198,7 @@ describe("KrystalVaultAutomator", () => {
         decreaseAmount1Min: 0,
         amount0Min: 0,
         amount1Min: 0,
+        automatorFee: 100,
         abiEncodedUserOrder: abiEncodedOrder,
         orderSignature: orderSignature,
       }),
@@ -213,6 +215,7 @@ describe("KrystalVaultAutomator", () => {
         decreaseAmount1Min: 0,
         amount0Min: 0,
         amount1Min: 0,
+        automatorFee: 100,
         abiEncodedUserOrder: abiEncodedOrder,
         orderSignature: orderSignature,
       }),

@@ -30,7 +30,8 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
       params.decreaseAmount0Min,
       params.decreaseAmount1Min,
       params.amount0Min,
-      params.amount1Min
+      params.amount1Min,
+      params.automatorFee
     );
   }
 
@@ -44,12 +45,13 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     IKrystalVault vault,
     uint256 amount0Min,
     uint256 amount1Min,
+    uint16 automatorFee,
     bytes calldata abiEncodedUserOrder,
     bytes calldata orderSignature
   ) external onlyRole(OPERATOR_ROLE) whenNotPaused {
     address vaultOwner = vault.getVaultOwner();
     _validateOrder(abiEncodedUserOrder, orderSignature, vaultOwner);
-    vault.exit(vaultOwner, amount0Min, amount1Min);
+    vault.exit(vaultOwner, amount0Min, amount1Min, automatorFee);
   }
 
   /// @notice Execute compound on a KrystalVault
@@ -62,11 +64,12 @@ contract KrystalVaultAutomator is IKrystalVaultAutomator, CustomEIP712, AccessCo
     IKrystalVault vault,
     uint256 amount0Min,
     uint256 amount1Min,
+    uint16 automatorFee,
     bytes calldata abiEncodedUserOrder,
     bytes calldata orderSignature
   ) external onlyRole(OPERATOR_ROLE) whenNotPaused {
     _validateOrder(abiEncodedUserOrder, orderSignature, vault.getVaultOwner());
-    vault.compound(amount0Min, amount1Min);
+    vault.compound(amount0Min, amount1Min, automatorFee);
   }
 
   /// @dev Validate the order

@@ -47,7 +47,7 @@ _Make a direct `exactIn` pool swap_
 ### optimalSwap
 
 ```solidity
-function optimalSwap(address pool, uint256 amount0Desired, uint256 amount1Desired, int24 tickLower, int24 tickUpper, bytes data) external
+function optimalSwap(address pool, uint256 amount0Desired, uint256 amount1Desired, int24 tickLower, int24 tickUpper, bytes) external
 ```
 
 Swap tokens in a Uniswap V3 pool
@@ -61,5 +61,5 @@ Swap tokens in a Uniswap V3 pool
 | amount1Desired | uint256 | The amount of token1 to be swapped |
 | tickLower | int24 | The lower tick of the pool range |
 | tickUpper | int24 | The upper tick of the pool range |
-| data | bytes | Additional data for the swap |
+|  | bytes |  |
 

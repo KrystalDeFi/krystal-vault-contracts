@@ -5,7 +5,7 @@ import { expect } from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { HardhatEthersSigner } from "@nomicfoundation/hardhat-ethers/signers";
 
-import { KrystalVault, KrystalVaultFactory, TestERC20 } from "../typechain-types";
+import { KrystalVault, KrystalVaultFactory, TestERC20, INonfungiblePositionManager } from "../typechain-types";
 
 import { getMaxTick, getMinTick } from "../helpers/univ3";
 import { blockNumber } from "../helpers/vm";
@@ -15,6 +15,18 @@ import { last } from "lodash";
 
 chai.use(chaiAsPromised);
 
+async function initPool(nfpm: INonfungiblePositionManager, token0: TestERC20, token1: TestERC20) {
+  if ((await token0.getAddress()) > (await token1.getAddress())) {
+    [token0, token1] = [token1, token0];
+  }
+  await nfpm.createAndInitializePoolIfNecessary(
+    token0,
+    token1,
+    3000,
+    "79228162514264337593543950336", // initial price = 1
+  );
+}
+
 describe("KrystalVaultFactory", function () {
   let owner: HardhatEthersSigner, alice: HardhatEthersSigner, bob: HardhatEthersSigner;
   let implementation: KrystalVault;
@@ -23,6 +35,7 @@ describe("KrystalVaultFactory", function () {
   let token0: TestERC20;
   let token1: TestERC20;
   let nfpmAddr = TestConfig.base_mainnet.nfpm;
+  let weth: TestERC20;
 
   beforeEach(async () => {
     [owner, alice, bob] = await ethers.getSigners();
@@ -56,12 +69,6 @@ describe("KrystalVaultFactory", function () {
     await token0.waitForDeployment();
     token1 = await ethers.deployContract("TestERC20", [parseEther("1000000")]);
     await token1.waitForDeployment();
-    const t0Addr = await token0.getAddress();
-    const t1Addr = await token1.getAddress();
-    if (t1Addr < t0Addr) {
-      [token0, token1] = [token1, token0];
-    }
-
     console.log("token0: ", await token0.getAddress());
     console.log("token1: ", await token1.getAddress());
 
@@ -72,12 +79,10 @@ describe("KrystalVaultFactory", function () {
     await token1.connect(alice).approve(nfpmAddr, parseEther("1000"));
 
     const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
-    await nfpm.createAndInitializePoolIfNecessary(
-      await token0.getAddress(),
-      await token1.getAddress(),
-      3000,
-      "79228162514264337593543950336", // initial price = 1
-    );
+    await initPool(nfpm, token0, token1);
+    weth = await ethers.getContractAt("TestERC20", await nfpm.WETH9());
+    console.log("WETH", await weth.getAddress());
+    await initPool(nfpm, token0, weth);
   });
 
   ////// Happy Path
@@ -85,10 +90,10 @@ describe("KrystalVaultFactory", function () {
     await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
-    const tx = await factory.connect(alice).createVault(
-      alice.address,
-      nfpmAddr,
-      {
+    const tx = await factory.connect(alice).createVault({
+      owner: alice.address,
+      nfpm: nfpmAddr,
+      mintParams: {
         token0: await token0.getAddress(),
         token1: await token1.getAddress(),
         fee: 3000,
@@ -101,10 +106,50 @@ describe("KrystalVaultFactory", function () {
         recipient: alice,
         deadline: (await blockNumber()) + 100,
       },
-      NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-      "Vault Name",
-      "VAULT",
+      ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+      name: "Vault Name",
+      symbol: "VAULT",
+    });
+
+    const receipt = await tx.wait();
+    // @ts-ignore
+    vaultAddress = last(receipt?.logs)?.args?.[1];
+    expect(vaultAddress).to.be.properAddress;
+    expect(await factory.allVaults(0)).to.equal(vaultAddress);
+  });
+
+  it("should create vault paired with weth", async () => {
+    await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
+
+    const ethBalanceBefore = await ethers.provider.getBalance(alice);
+    console.log("alice eth baalnce", ethBalanceBefore);
+    const tx = await factory.connect(alice).createVault(
+      {
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
+          token0: weth,
+          token1: token0,
+          fee: 3000,
+          tickLower: getMinTick(60),
+          tickUpper: getMaxTick(60),
+          amount0Desired: parseEther("10"),
+          amount1Desired: parseEther("10"),
+          amount0Min: parseEther("0.9"),
+          amount1Min: parseEther("0.9"),
+          recipient: alice,
+          deadline: (await blockNumber()) + 100,
+        },
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      },
+      {
+        value: parseEther("10"),
+      },
     );
+    const ethBalanceAfter = await ethers.provider.getBalance(alice);
+    expect(ethBalanceBefore - ethBalanceAfter).to.be.gt(parseEther("10"));
 
     const receipt = await tx.wait();
     // @ts-ignore
@@ -119,10 +164,10 @@ describe("KrystalVaultFactory", function () {
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token0.getAddress(),
           fee: 3000,
@@ -135,17 +180,17 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(factory, "IdenticalAddresses");
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: "0x0000000000000000000000000000000000000000",
           token1: await token0.getAddress(),
           fee: 3000,
@@ -158,17 +203,17 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(factory, "ZeroAddress");
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token1.getAddress(),
           fee: 4000,
@@ -181,17 +226,17 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(factory, "InvalidFee");
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: "0x0000000000000000000000000000000000000001",
           token1: await token1.getAddress(),
           fee: 3000,
@@ -204,17 +249,17 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(factory, "PoolNotFound");
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token1.getAddress(),
           fee: 3000,
@@ -227,10 +272,10 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(token0, "ERC20InsufficientAllowance");
   });
 
@@ -241,10 +286,10 @@ describe("KrystalVaultFactory", function () {
     await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
     await expect(
-      factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token1.getAddress(),
           fee: 3000,
@@ -257,10 +302,10 @@ describe("KrystalVaultFactory", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Vault Name",
-        "VAULT",
-      ),
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Vault Name",
+        symbol: "VAULT",
+      }),
     ).to.be.revertedWithCustomError(factory, "EnforcedPause");
   });
 });
@@ -271,6 +316,7 @@ describe("KrystalVault", function () {
 
   let aliceVaultContract: KrystalVault;
   let bobVaultContract: KrystalVault;
+  let wethVaultContract: KrystalVault;
 
   let vaultAddress: string;
   let nfpmAddr = TestConfig.base_mainnet.nfpm;
@@ -334,10 +380,10 @@ describe("KrystalVault", function () {
       await token0.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
       await token1.connect(alice).approve(await factory.getAddress(), parseEther("1000"));
 
-      const tx = await factory.connect(alice).createVault(
-        alice.address,
-        nfpmAddr,
-        {
+      const tx = await factory.connect(alice).createVault({
+        owner: alice.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token1.getAddress(),
           fee: 3000,
@@ -350,10 +396,10 @@ describe("KrystalVault", function () {
           recipient: alice,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Alice Vault",
-        "VAULT",
-      );
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Alice Vault",
+        symbol: "VAULT",
+      });
 
       const receipt = await tx.wait();
       // @ts-ignore
@@ -365,10 +411,10 @@ describe("KrystalVault", function () {
     {
       await token0.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
       await token1.connect(bob).approve(await factory.getAddress(), parseEther("1000"));
-      const tx = await factory.connect(bob).createVault(
-        bob.address,
-        nfpmAddr,
-        {
+      const tx = await factory.connect(bob).createVault({
+        owner: bob.address,
+        nfpm: nfpmAddr,
+        mintParams: {
           token0: await token0.getAddress(),
           token1: await token1.getAddress(),
           fee: 3000,
@@ -381,16 +427,52 @@ describe("KrystalVault", function () {
           recipient: bob,
           deadline: (await blockNumber()) + 100,
         },
-        NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
-        "Bob Vault",
-        "VAULT",
-      );
+        ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+        name: "Bob Vault",
+        symbol: "VAULT",
+      });
 
       const receipt = await tx.wait();
       // @ts-ignore
       vaultAddress = last(receipt?.logs)?.args?.[1];
       console.log("bobVault deployed at: ", vaultAddress);
       bobVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, bob);
+    }
+
+    {
+      const weth = await ethers.getContractAt("TestERC20", await nfpm.WETH9());
+      console.log("WETH", await weth.getAddress());
+      await initPool(nfpm, token0, weth);
+      const tx = await factory.connect(alice).createVault(
+        {
+          owner: alice.address,
+          nfpm: nfpmAddr,
+          mintParams: {
+            token0: token0,
+            token1: weth,
+            fee: 3000,
+            tickLower: getMinTick(60),
+            tickUpper: getMaxTick(60),
+            amount0Desired: parseEther("10"),
+            amount1Desired: parseEther("10"),
+            amount0Min: parseEther("0.9"),
+            amount1Min: parseEther("0.9"),
+            recipient: alice,
+            deadline: (await blockNumber()) + 100,
+          },
+          ownerFeeBasisPoint: NetworkConfig.base_mainnet.ownerFeeBasisPoint || 50,
+          name: "Vault Name",
+          symbol: "VAULT",
+        },
+        {
+          value: parseEther("10"),
+        },
+      );
+      const receipt = await tx.wait();
+      // @ts-ignore
+      vaultAddress = last(receipt?.logs)?.args?.[1];
+      console.log("wethVault deployed at: ", vaultAddress);
+      wethVaultContract = await ethers.getContractAt("KrystalVault", vaultAddress, bob);
     }
   });
 
@@ -441,6 +523,21 @@ describe("KrystalVault", function () {
     expect(totalSupply).to.be.gt(0);
   });
 
+  it("should deposit into vault paired with eth", async () => {
+    const amount0Desired = parseEther("2");
+    const ethDesired = parseEther("2");
+
+    await token0.connect(alice).approve(wethVaultContract, parseEther("1000"));
+
+    const posBefore = await wethVaultContract.getBasePosition();
+    await wethVaultContract.connect(alice).deposit(ethDesired, amount0Desired, 0, 0, alice.address, {
+      value: ethDesired,
+    });
+    const posAfter = await wethVaultContract.getBasePosition();
+    expect(posAfter[1] - posBefore[1]).to.be.equal(parseEther("2"));
+    expect(posAfter[2] - posBefore[2]).to.be.equal(parseEther("2"));
+  });
+
   ////// Happy Path
   it("Should rebalance the Vault", async () => {
     const amount0Desired = parseEther("1");
@@ -451,7 +548,7 @@ describe("KrystalVault", function () {
 
     await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
     {
-      await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
+      await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0, 0);
       const state = await aliceVaultContract.state();
       expect(state.currentTickLower).to.equal(-300);
       expect(state.currentTickUpper).to.equal(600);
@@ -465,7 +562,7 @@ describe("KrystalVault", function () {
     await bobVaultContract.connect(alice).deposit(parseEther("500"), parseEther("500"), 0, 0, alice.address);
     {
       // Out range, currentTick > tickUpper
-      await aliceVaultContract.rebalance(-600, -300, 0, 0, 0, 0);
+      await aliceVaultContract.rebalance(-600, -300, 0, 0, 0, 0, 0);
       const state = await aliceVaultContract.state();
       expect(state.currentTickLower).to.equal(-600);
       expect(state.currentTickUpper).to.equal(-300);
@@ -475,7 +572,7 @@ describe("KrystalVault", function () {
     }
     {
       // Out range, currentTick < tickLower
-      await aliceVaultContract.rebalance(300, 600, 0, 0, 0, 0);
+      await aliceVaultContract.rebalance(300, 600, 0, 0, 0, 0, 0);
       const state = await aliceVaultContract.state();
       expect(state.currentTickLower).to.equal(300);
       expect(state.currentTickUpper).to.equal(600);
@@ -495,11 +592,11 @@ describe("KrystalVault", function () {
 
     await aliceVaultContract.deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
     // Do a rebalance to swap
-    await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0);
+    await aliceVaultContract.rebalance(-300, 600, 0, 0, 0, 0, 0);
     console.log("token0 balance: ", await token0.balanceOf(aliceVaultContract));
     console.log("token1 balance: ", await token1.balanceOf(aliceVaultContract));
     const posBefore = await aliceVaultContract.getBasePosition();
-    await aliceVaultContract.compound(0, 0);
+    await aliceVaultContract.compound(0, 0, 0);
     const posAfter = await aliceVaultContract.getBasePosition();
     expect(posAfter[0] - posBefore[0]).to.be.gt(0);
     expect(posAfter[1] - posBefore[1]).to.be.gt(0);
@@ -526,7 +623,7 @@ describe("KrystalVault", function () {
     const aliceBalance0Before = await token0.balanceOf(alice.address);
     const aliceBalance1Before = await token1.balanceOf(alice.address);
     // alice exit position
-    await aliceVaultContract.exit(alice.address, 0, 0);
+    await aliceVaultContract.exit(alice.address, 0, 0, 0);
     const aliceBalance0After = await token0.balanceOf(alice.address);
     const aliceBalance1After = await token1.balanceOf(alice.address);
     expect(aliceBalance0After - aliceBalance0Before).to.be.gt(0);
@@ -559,19 +656,31 @@ describe("KrystalVault", function () {
 
   ////// Error Path
   it("Should not available to action if not authorized", async () => {
-    await expect(aliceVaultContract.connect(bob).exit(bob.address, 0, 0)).to.be.revertedWithCustomError(
+    await expect(aliceVaultContract.connect(bob).exit(bob.address, 0, 0, 0)).to.be.revertedWithCustomError(
       aliceVaultContract,
       "AccessControlUnauthorizedAccount",
     );
 
-    await expect(aliceVaultContract.connect(bob).rebalance(0, 0, 0, 0, 0, 0)).to.be.revertedWithCustomError(
+    await expect(aliceVaultContract.connect(bob).rebalance(0, 0, 0, 0, 0, 0, 0)).to.be.revertedWithCustomError(
       aliceVaultContract,
       "AccessControlUnauthorizedAccount",
     );
 
-    await expect(aliceVaultContract.connect(bob).compound(0, 0)).to.be.revertedWithCustomError(
+    await expect(aliceVaultContract.connect(bob).compound(0, 0, 0)).to.be.revertedWithCustomError(
       aliceVaultContract,
       "AccessControlUnauthorizedAccount",
     );
+  });
+  it("should not deposit into weth vault if msg.value doesn't match amountDesired", async () => {
+    const amount0Desired = parseEther("2");
+    const ethDesired = parseEther("2");
+
+    await token0.connect(alice).approve(wethVaultContract, parseEther("1000"));
+
+    await expect(
+      wethVaultContract.connect(alice).deposit(ethDesired, amount0Desired, 0, 0, alice.address, {
+        value: parseEther("1"),
+      }),
+    ).to.be.revertedWithCustomError(wethVaultContract, "InvalidAmount");
   });
 });

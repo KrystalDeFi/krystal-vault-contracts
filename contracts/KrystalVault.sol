@@ -19,6 +19,8 @@ import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 import "./interfaces/IKrystalVault.sol";
 import "./interfaces/IOptimalSwapper.sol";
 
+import {IWETH9} from "./interfaces/IWETH9.sol";
+
 /// @title KrystalVault
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
 /// which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
@@ -33,7 +35,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   address public vaultFactory;
   address public vaultOwner;
 
-  VaultState public state;
+  VaultState public override state;
   VaultConfig public config;
   IOptimalSwapper public optimalSwapper;
 
@@ -106,7 +108,12 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     int24 tickUpper,
     uint256 amount0Min,
     uint256 amount1Min
-  ) external override onlyVaultFactory returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) {
+  )
+    external
+    override
+    onlyVaultFactory
+    returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
+  {
     require(state.currentTokenId == 0, InvalidPosition());
 
     uint256 amount0Desired = state.token0.balanceOf(address(this));
@@ -153,7 +160,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     uint256 amount0Min,
     uint256 amount1Min,
     address to
-  ) external override nonReentrant returns (uint256 shares) {
+  ) external payable override nonReentrant returns (uint256 shares) {
     require(amount0Desired > 0 || amount1Desired > 0, ZeroAmount());
     require(state.currentTokenId != 0, InvalidPosition());
 
@@ -162,7 +169,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     }
 
     /// update fees
-    _collectFees();
+    _collectFees(0);
     /// optimally swap tokens
     _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
@@ -175,12 +182,23 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     shares =
       ((amount1Desired + FullMath.mulDiv(amount0Desired, priceX96, FixedPoint96.Q96)) * total) /
       (total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96));
+    address weth9 = state.nfpm.WETH9();
 
     if (amount0Desired > 0) {
-      state.token0.safeTransferFrom(_msgSender(), address(this), amount0Desired);
+      if (address(state.token0) == weth9 && msg.value > 0) {
+        require(msg.value == amount0Desired, InvalidAmount());
+        IWETH9(weth9).deposit{ value: msg.value }();
+      } else {
+        state.token0.safeTransferFrom(_msgSender(), address(this), amount0Desired);
+      }
     }
     if (amount1Desired > 0) {
-      state.token1.safeTransferFrom(_msgSender(), address(this), amount1Desired);
+      if (address(state.token1) == weth9 && msg.value > 0) {
+        require(msg.value == amount1Desired, InvalidAmount());
+        IWETH9(weth9).deposit{ value: msg.value }();
+      } else {
+        state.token1.safeTransferFrom(_msgSender(), address(this), amount1Desired);
+      }
     }
 
     INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager
@@ -219,7 +237,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     uint256 base1;
     if (state.currentTokenId != 0) {
       /// update fees
-      _collectFees();
+      _collectFees(0);
 
       /// Withdraw liquidity from Uniswap pool
       (base0, base1) = _decreaseLiquidityAndCollectFees(_liquidityForShares(shares), to, false, amount0Min, amount1Min);
@@ -249,13 +267,14 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   function exit(
     address to,
     uint256 amount0Min,
-    uint256 amount1Min
+    uint256 amount1Min,
+    uint16 automatorFee
   ) external override onlyRole(ADMIN_ROLE_HASH) nonReentrant {
     uint256 shares = IERC20(address(this)).balanceOf(vaultOwner);
     require(to != address(0), ZeroAddress());
 
     /// update fees
-    _collectFees();
+    _collectFees(automatorFee);
 
     (uint128 liquidity, , ) = _position();
 
@@ -288,13 +307,15 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   /// @param  decreasedAmount1Min min amount1 returned for shares of liq
   /// @param  amount0Min min amount0 returned for shares of liq
   /// @param  amount1Min min amount1 returned for shares of liq
+  /// @param  automatorFee fee for automator contract
   function rebalance(
     int24 _newTickLower,
     int24 _newTickUpper,
     uint256 decreasedAmount0Min,
     uint256 decreasedAmount1Min,
     uint256 amount0Min,
-    uint256 amount1Min
+    uint256 amount1Min,
+    uint16 automatorFee
   ) external override nonReentrant onlyRole(ADMIN_ROLE_HASH) {
     require(
       _newTickLower < _newTickUpper && _newTickLower % state.tickSpacing == 0 && _newTickUpper % state.tickSpacing == 0,
@@ -303,7 +324,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     require(_newTickLower != state.currentTickLower || _newTickUpper != state.currentTickUpper, InvalidPriceRange());
 
     /// update fees
-    _collectFees();
+    _collectFees(automatorFee);
 
     /// Withdraw all liquidity and collect all fees from Uniswap pool
     (uint128 baseLiquidity, , ) = _position();
@@ -333,15 +354,20 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       })
     );
 
-    emit ChangeRange(address(state.nfpm), oldTokenId, state.currentTokenId, liquidity, amount0, amount1);
+    emit VaultRebalance(address(state.nfpm), oldTokenId, state.currentTokenId, liquidity, amount0, amount1);
   }
 
   /// @notice Compound fees
   /// @param amount0Min Minimum amount of token0 to receive
   /// @param amount1Min Minimum amount of token1 to receive
-  function compound(uint256 amount0Min, uint256 amount1Min) external override onlyRole(ADMIN_ROLE_HASH) {
+  /// @param automatorFee Fee for automator contract
+  function compound(
+    uint256 amount0Min,
+    uint256 amount1Min,
+    uint16 automatorFee
+  ) external override onlyRole(ADMIN_ROLE_HASH) {
     // update fees for compounding
-    _collectFees();
+    _collectFees(automatorFee);
     _optimalSwap(state.currentTickLower, state.currentTickUpper);
 
     // add liquidity
@@ -356,11 +382,12 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       });
     (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
 
-    emit Compound(currentTick(), amount0Added, amount1Added, totalSupply());
+    emit VaultCompound(currentTick(), amount0Added, amount1Added, totalSupply());
   }
 
   /// @notice Collect fees
-  function _collectFees() internal returns (uint128 liquidity) {
+  function _collectFees(uint16 automatorFeeBasisPoint) internal returns (uint128 liquidity) {
+    require(automatorFeeBasisPoint <= 2500, InvalidFee());
     (liquidity, , ) = _position();
 
     if (liquidity > 0) {
@@ -375,13 +402,19 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
 
       uint256 feeAmount0 = (owed0 * config.platformFeeBasisPoint) / 10000;
       uint256 feeAmount1 = (owed1 * config.platformFeeBasisPoint) / 10000;
+      emit FeeCollected(config.platformFeeRecipient, FeeType.PLATFORM, feeAmount0, feeAmount1);
 
+      if (automatorFeeBasisPoint > 0) {
+        uint256 automatorFee0 = (owed0 * automatorFeeBasisPoint) / 10000;
+        uint256 automatorFee1 = (owed1 * automatorFeeBasisPoint) / 10000;
+        emit FeeCollected(config.platformFeeRecipient, FeeType.AUTOMATOR, automatorFee0, automatorFee1);
+        feeAmount0 = feeAmount0 + automatorFee0;
+        feeAmount1 = feeAmount1 + automatorFee1;
+      }
       if (feeAmount0 > 0 && state.token0.balanceOf(address(this)) > 0)
         state.token0.safeTransfer(config.platformFeeRecipient, feeAmount0);
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(config.platformFeeRecipient, feeAmount1);
-
-      emit FeeCollected(config.platformFeeRecipient, 1, feeAmount0, feeAmount1);
 
       feeAmount0 = (owed0 * config.ownerFeeBasisPoint) / 10000;
       feeAmount1 = (owed1 * config.ownerFeeBasisPoint) / 10000;
@@ -390,7 +423,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       if (feeAmount1 > 0 && state.token1.balanceOf(address(this)) > 0)
         state.token1.safeTransfer(vaultOwner, feeAmount1);
 
-      emit FeeCollected(vaultOwner, 2, feeAmount0, feeAmount1);
+      emit FeeCollected(vaultOwner, FeeType.OWNER, feeAmount0, feeAmount1);
     }
 
     return liquidity;
@@ -410,7 +443,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     state.token0.approve(address(state.nfpm), type(uint256).max);
     state.token1.approve(address(state.nfpm), type(uint256).max);
 
-    (tokenId, liquidity, amount0, amount1) = state.nfpm.mint(params);
+    (tokenId, liquidity, amount0, amount1) = state.nfpm.mint{ value: msg.value }(params);
 
     state.currentTokenId = tokenId;
     emit VaultPositionMint(address(state.nfpm), tokenId);

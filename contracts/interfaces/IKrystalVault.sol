@@ -36,7 +36,7 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 tokenId
   );
 
-  event ChangeRange(
+  event VaultRebalance(
     address indexed nfpm,
     uint256 indexed oldTokenId,
     uint256 newTokenId,
@@ -45,9 +45,15 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 amount1Added
   );
 
-  event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);
+  event VaultCompound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply);
 
-  event FeeCollected(address indexed recipient, uint8 feeType, uint256 fees0, uint256 fees1);
+  enum FeeType {
+    PLATFORM,
+    OWNER,
+    AUTOMATOR
+  }
+
+  event FeeCollected(address indexed recipient, FeeType feeType, uint256 fees0, uint256 fees1);
 
   function mintPosition(
     address owner,
@@ -63,7 +69,7 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 amount0Min,
     uint256 amount1Min,
     address to
-  ) external returns (uint256 shares);
+  ) external payable returns (uint256 shares);
 
   function withdraw(
     uint256 shares,
@@ -72,7 +78,7 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 amount1Min
   ) external returns (uint256 amount0, uint256 amount1);
 
-  function exit(address to, uint256 amount0Min, uint256 amount1Min) external;
+  function exit(address to, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external;
 
   function rebalance(
     int24 _baseLower,
@@ -80,10 +86,11 @@ interface IKrystalVault is IKrystalVaultCommon {
     uint256 decreasedAmount0Min,
     uint256 decreasedAmount1Min,
     uint256 amount0Min,
-    uint256 amount1Min
+    uint256 amount1Min,
+    uint16 automatorFee
   ) external;
 
-  function compound(uint256 amount0Min, uint256 amount1Min) external;
+  function compound(uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external;
 
   function getTotalAmounts() external view returns (uint256 total0, uint256 total1);
 
@@ -96,4 +103,16 @@ interface IKrystalVault is IKrystalVaultCommon {
   function revokeAdminRole(address _address) external;
 
   function getVaultOwner() external view returns (address);
+
+  function state() external view returns (
+    IUniswapV3Pool pool,
+    INonfungiblePositionManager nfpm,
+    IERC20 token0,
+    IERC20 token1,
+    uint256 currentTokenId,
+    int24 currentTickLower,
+    int24 currentTickUpper,
+    int24 tickSpacing,
+    uint24 fee
+  );
 }

@@ -42,22 +42,32 @@ event VaultWithdraw(address sender, address to, uint256 shares, uint256 amount0,
 event VaultExit(address sender, address to, uint256 shares, uint256 amount0, uint256 amount1, uint256 tokenId)
 ```
 
-### ChangeRange
+### VaultRebalance
 
 ```solidity
-event ChangeRange(address nfpm, uint256 oldTokenId, uint256 newTokenId, uint256 liquidity, uint256 amount0Added, uint256 amount1Added)
+event VaultRebalance(address nfpm, uint256 oldTokenId, uint256 newTokenId, uint256 liquidity, uint256 amount0Added, uint256 amount1Added)
 ```
 
-### Compound
+### VaultCompound
 
 ```solidity
-event Compound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply)
+event VaultCompound(int24 tick, uint256 token0Balance, uint256 token1Balance, uint256 totalSupply)
+```
+
+### FeeType
+
+```solidity
+enum FeeType {
+  PLATFORM,
+  OWNER,
+  AUTOMATOR
+}
 ```
 
 ### FeeCollected
 
 ```solidity
-event FeeCollected(address recipient, uint8 feeType, uint256 fees0, uint256 fees1)
+event FeeCollected(address recipient, enum IKrystalVault.FeeType feeType, uint256 fees0, uint256 fees1)
 ```
 
 ### mintPosition
@@ -69,7 +79,7 @@ function mintPosition(address owner, int24 tickLower, int24 tickUpper, uint256 a
 ### deposit
 
 ```solidity
-function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external returns (uint256 shares)
+function deposit(uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, address to) external payable returns (uint256 shares)
 ```
 
 ### withdraw
@@ -81,19 +91,19 @@ function withdraw(uint256 shares, address to, uint256 amount0Min, uint256 amount
 ### exit
 
 ```solidity
-function exit(address to, uint256 amount0Min, uint256 amount1Min) external
+function exit(address to, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 ### rebalance
 
 ```solidity
-function rebalance(int24 _baseLower, int24 _baseUpper, uint256 decreasedAmount0Min, uint256 decreasedAmount1Min, uint256 amount0Min, uint256 amount1Min) external
+function rebalance(int24 _baseLower, int24 _baseUpper, uint256 decreasedAmount0Min, uint256 decreasedAmount1Min, uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 ### compound
 
 ```solidity
-function compound(uint256 amount0Min, uint256 amount1Min) external
+function compound(uint256 amount0Min, uint256 amount1Min, uint16 automatorFee) external
 ```
 
 ### getTotalAmounts
@@ -130,5 +140,11 @@ function revokeAdminRole(address _address) external
 
 ```solidity
 function getVaultOwner() external view returns (address)
+```
+
+### state
+
+```solidity
+function state() external view returns (contract IUniswapV3Pool pool, contract INonfungiblePositionManager nfpm, contract IERC20 token0, contract IERC20 token1, uint256 currentTokenId, int24 currentTickLower, int24 currentTickUpper, int24 tickSpacing, uint24 fee)
 ```
 
