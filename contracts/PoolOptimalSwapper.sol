@@ -92,4 +92,31 @@ contract PoolOptimalSwapper is IOptimalSwapper, IUniswapV3SwapCallback {
     token0.transfer(msg.sender, token0.balanceOf(address(this)));
     token1.transfer(msg.sender, token1.balanceOf(address(this)));
   }
+
+  function getOptimalSwapAmounts(
+    address pool,
+    uint256 amount0Desired,
+    uint256 amount1Desired,
+    int24 tickLower,
+    int24 tickUpper,
+    bytes calldata
+  ) external view returns (uint256 amount0, uint256 amount1) {
+    (uint256 amountIn, uint256 amountOut, bool zeroForOne, ) = OptimalSwap.getOptimalSwap(
+      V3PoolCallee.wrap(pool),
+      tickLower,
+      tickUpper,
+      amount0Desired,
+      amount1Desired
+    );
+
+    // balance0 = balance0 + zeroForOne ? - amountIn : amountOut
+    // balance1 = balance1 + zeroForOne ? amountOut : - amountIn
+    if (zeroForOne) {
+      amount0 = amount0Desired - amountIn;
+      amount1 = amount1Desired + amountOut;
+    } else {
+      amount0 = amount0Desired + amountOut;
+      amount1 = amount1Desired - amountIn;
+    }
+  }
 }
