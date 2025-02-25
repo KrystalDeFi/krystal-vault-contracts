@@ -204,10 +204,11 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
         deadline: block.timestamp
       })
     );
-    shares =
-      ((amount1Added + FullMath.mulDiv(amount0Added, priceX96, FixedPoint96.Q96)) * total) /
-      (total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96));
-
+    shares = FullMath.mulDiv(
+      amount1Added + FullMath.mulDiv(amount0Added, priceX96, FixedPoint96.Q96),
+      total,
+      total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96)
+    );
     _mint(to, shares);
 
     // Return left over
