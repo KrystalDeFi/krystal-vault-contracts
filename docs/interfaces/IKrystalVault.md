@@ -70,6 +70,12 @@ enum FeeType {
 event FeeCollected(address recipient, enum IKrystalVault.FeeType feeType, uint256 fees0, uint256 fees1)
 ```
 
+### initialize
+
+```solidity
+function initialize(address _nfpm, address _pool, address _owner, struct IKrystalVaultCommon.VaultConfig _config, string name, string symbol, address _optimalSwapper, address _vaultAutomator) external
+```
+
 ### mintPosition
 
 ```solidity

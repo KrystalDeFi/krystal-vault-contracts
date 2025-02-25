@@ -11,7 +11,7 @@ import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
-import { KrystalVault } from "./KrystalVault.sol";
+import { IKrystalVault } from "./interfaces/IKrystalVault.sol";
 
 import "./interfaces/IKrystalVaultFactory.sol";
 import { IWETH9 } from "./interfaces/IWETH9.sol";
@@ -77,7 +77,7 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
     }
 
     vault = Clones.clone(krystalVaultImplementation);
-    KrystalVault(vault).initialize(
+    IKrystalVault(vault).initialize(
       params.nfpm,
       pool,
       params.owner,
@@ -97,7 +97,7 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
       require(msg.value == params.mintParams.amount0Desired, InvalidAmount());
       IWETH9(weth).deposit{ value: msg.value }();
       IWETH9(weth).transfer(vault, msg.value);
-    }else {
+    } else {
       IERC20(token0).safeTransferFrom(_msgSender(), vault, params.mintParams.amount0Desired);
     }
     if (token1 == weth && msg.value > 0) {
@@ -108,7 +108,7 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
       IERC20(token1).safeTransferFrom(_msgSender(), vault, params.mintParams.amount1Desired);
     }
 
-    KrystalVault(vault).mintPosition(
+    IKrystalVault(vault).mintPosition(
       params.owner,
       params.mintParams.tickLower,
       params.mintParams.tickUpper,
