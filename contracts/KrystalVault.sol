@@ -270,6 +270,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
   /// @param to Address to which redeemed pool assets are sent
   /// @param amount0Min Minimum amount of token0 to receive
   /// @param amount1Min Minimum amount of token1 to receive
+  /// @param automatorFee Fee for automator contract
   function exit(
     address to,
     uint256 amount0Min,
