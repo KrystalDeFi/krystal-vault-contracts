@@ -37,3 +37,4 @@ struct CreateVaultParams {
 ```solidity
 function createVault(struct IKrystalVaultFactory.CreateVaultParams params) external payable returns (address krystalVault)
 ```
+
