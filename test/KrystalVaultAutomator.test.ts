@@ -66,7 +66,7 @@ describe("KrystalVaultAutomator", () => {
     await token1.waitForDeployment();
     const t0Addr = await token0.getAddress();
     const t1Addr = await token1.getAddress();
-    if (t1Addr < t0Addr) {
+    if (t1Addr.toLowerCase() < t0Addr.toLowerCase()) {
       [token0, token1] = [token1, token0];
     }
 
@@ -78,8 +78,8 @@ describe("KrystalVaultAutomator", () => {
 
     const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
     await nfpm.createAndInitializePoolIfNecessary(
-      await token0.getAddress(),
-      await token1.getAddress(),
+      token0,
+      token1,
       3000,
       "79228162514264337593543950336", // initial price = 1
     );

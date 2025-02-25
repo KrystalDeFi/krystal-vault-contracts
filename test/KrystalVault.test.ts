@@ -16,7 +16,7 @@ import { last } from "lodash";
 chai.use(chaiAsPromised);
 
 async function initPool(nfpm: INonfungiblePositionManager, token0: TestERC20, token1: TestERC20) {
-  if ((await token0.getAddress()) > (await token1.getAddress())) {
+  if ((await token0.getAddress()).toLowerCase() > (await token1.getAddress()).toLowerCase()) {
     [token0, token1] = [token1, token0];
   }
   await nfpm.createAndInitializePoolIfNecessary(
@@ -82,7 +82,7 @@ describe("KrystalVaultFactory", function () {
     await initPool(nfpm, token0, token1);
     weth = await ethers.getContractAt("TestERC20", await nfpm.WETH9());
     console.log("WETH", await weth.getAddress());
-    await initPool(nfpm, token0, weth);
+    await initPool(nfpm, weth, token0);
   });
 
   ////// Happy Path
@@ -356,7 +356,7 @@ describe("KrystalVault", function () {
     await token1.waitForDeployment();
     const t0Addr = await token0.getAddress();
     const t1Addr = await token1.getAddress();
-    if (t1Addr < t0Addr) {
+    if (t1Addr.toLowerCase() < t0Addr.toLowerCase()) {
       [token0, token1] = [token1, token0];
     }
 
@@ -370,8 +370,8 @@ describe("KrystalVault", function () {
 
     const nfpm = await ethers.getContractAt("INonfungiblePositionManager", nfpmAddr, await ethers.provider.getSigner());
     await nfpm.createAndInitializePoolIfNecessary(
-      await token0.getAddress(),
-      await token1.getAddress(),
+      token0,
+      token1,
       3000,
       "79228162514264337593543950336", // initial price = 1
     );
@@ -384,8 +384,8 @@ describe("KrystalVault", function () {
         owner: alice.address,
         nfpm: nfpmAddr,
         mintParams: {
-          token0: await token0.getAddress(),
-          token1: await token1.getAddress(),
+          token0: token0,
+          token1: token1,
           fee: 3000,
           tickLower: getMinTick(60),
           tickUpper: getMaxTick(60),
@@ -644,6 +644,21 @@ describe("KrystalVault", function () {
     expect(bobBalance1After - bobBalance1Before).to.be.gt(0);
     console.log("bob token0 withdrawn: ", bobBalance0After - bobBalance0Before);
     console.log("bob token1 withdrawn: ", bobBalance1After - bobBalance1Before);
+  });
+  it("Should refund if deposit more than needed", async () => {
+    const amount0Desired = parseEther("4");
+    const amount1Desired = parseEther("2");
+
+    await token0.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+    await token1.connect(alice).approve(aliceVaultContract, parseEther("1000"));
+    const balance0Before = await token0.balanceOf(alice);
+    const balance1Before = await token1.balanceOf(alice);
+    await aliceVaultContract.connect(alice).deposit(amount0Desired, amount1Desired, 0, 0, alice.address);
+    const balance0After = await token0.balanceOf(alice);
+    const balance1After = await token1.balanceOf(alice);
+
+    expect(balance0Before - balance0After).to.be.equal(parseEther("2"));
+    expect(balance1Before - balance1After).to.be.equal(parseEther("2"));
   });
 
   ////// Error Path
