@@ -153,3 +153,4 @@ function getVaultOwner() external view returns (address)
 ```solidity
 function state() external view returns (contract IUniswapV3Pool pool, contract INonfungiblePositionManager nfpm, contract IERC20 token0, contract IERC20 token1, uint256 currentTokenId, int24 currentTickLower, int24 currentTickUpper, int24 tickSpacing, uint24 fee)
 ```
+
