@@ -19,7 +19,7 @@ import "@uniswap/v3-periphery/contracts/libraries/LiquidityAmounts.sol";
 import "./interfaces/IKrystalVault.sol";
 import "./interfaces/IOptimalSwapper.sol";
 
-import {IWETH9} from "./interfaces/IWETH9.sol";
+import { IWETH9 } from "./interfaces/IWETH9.sol";
 
 /// @title KrystalVault
 /// @notice A Uniswap V2-like interface with fungible liquidity to Uniswap V3
@@ -108,12 +108,7 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     int24 tickUpper,
     uint256 amount0Min,
     uint256 amount1Min
-  )
-    external
-    override
-    onlyVaultFactory
-    returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
-  {
+  ) external override onlyVaultFactory returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1) {
     require(state.currentTokenId == 0, InvalidPosition());
 
     uint256 amount0Desired = state.token0.balanceOf(address(this));
@@ -172,6 +167,19 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     _collectFees(0);
     /// optimally swap tokens
     _optimalSwap(state.currentTickLower, state.currentTickUpper);
+    /// deposit all of current balances first
+    if (state.token0.balanceOf(address(this)) > 0 || state.token1.balanceOf(address(this)) > 0) {
+      state.nfpm.increaseLiquidity(
+        INonfungiblePositionManager.IncreaseLiquidityParams({
+          tokenId: state.currentTokenId,
+          amount0Desired: state.token0.balanceOf(address(this)),
+          amount1Desired: state.token1.balanceOf(address(this)),
+          amount0Min: 0,
+          amount1Min: 0,
+          deadline: block.timestamp
+        })
+      );
+    }
 
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
@@ -179,39 +187,36 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     (uint256 total0, uint256 total1) = getTotalAmounts();
     uint256 total = totalSupply();
 
-    shares =
-      ((amount1Desired + FullMath.mulDiv(amount0Desired, priceX96, FixedPoint96.Q96)) * total) /
-      (total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96));
-    address weth9 = state.nfpm.WETH9();
-
     if (amount0Desired > 0) {
-      if (address(state.token0) == weth9 && msg.value > 0) {
-        require(msg.value == amount0Desired, InvalidAmount());
-        IWETH9(weth9).deposit{ value: msg.value }();
-      } else {
-        state.token0.safeTransferFrom(_msgSender(), address(this), amount0Desired);
-      }
+      receiveTokenOrNative(state.token0, _msgSender(), amount0Desired);
     }
     if (amount1Desired > 0) {
-      if (address(state.token1) == weth9 && msg.value > 0) {
-        require(msg.value == amount1Desired, InvalidAmount());
-        IWETH9(weth9).deposit{ value: msg.value }();
-      } else {
-        state.token1.safeTransferFrom(_msgSender(), address(this), amount1Desired);
-      }
+      receiveTokenOrNative(state.token1, _msgSender(), amount1Desired);
     }
 
-    INonfungiblePositionManager.IncreaseLiquidityParams memory params = INonfungiblePositionManager
-      .IncreaseLiquidityParams({
+    (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(
+      INonfungiblePositionManager.IncreaseLiquidityParams({
         tokenId: state.currentTokenId,
         amount0Desired: state.token0.balanceOf(address(this)),
         amount1Desired: state.token1.balanceOf(address(this)),
         amount0Min: amount0Min,
         amount1Min: amount1Min,
         deadline: block.timestamp
-      });
-    (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
+      })
+    );
+    shares =
+      ((amount1Added + FullMath.mulDiv(amount0Added, priceX96, FixedPoint96.Q96)) * total) /
+      (total1 + FullMath.mulDiv(total0, priceX96, FixedPoint96.Q96));
+
     _mint(to, shares);
+
+    // Return left over
+    if (amount0Desired > amount0Added) {
+      state.token0.safeTransfer(_msgSender(), amount0Desired - amount0Added);
+    }
+    if (amount1Desired > amount1Added) {
+      state.token1.safeTransfer(_msgSender(), amount1Desired - amount1Added);
+    }
 
     emit VaultDeposit(to, shares, amount0Added, amount1Added);
     return shares;
@@ -383,6 +388,15 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     (, uint256 amount0Added, uint256 amount1Added) = state.nfpm.increaseLiquidity(params);
 
     emit VaultCompound(currentTick(), amount0Added, amount1Added, totalSupply());
+  }
+
+  function receiveTokenOrNative(IERC20 token, address sender, uint256 amount) internal {
+    if (address(token) == state.nfpm.WETH9() && msg.value > 0) {
+      require(amount == msg.value, InvalidAmount());
+      IWETH9(state.nfpm.WETH9()).deposit{ value: amount }();
+    } else {
+      token.safeTransferFrom(sender, address(this), amount);
+    }
   }
 
   /// @notice Collect fees

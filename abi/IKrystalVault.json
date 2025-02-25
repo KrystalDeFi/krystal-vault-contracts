@@ -483,6 +483,71 @@
     "inputs": [
       {
         "internalType": "address",
+        "name": "_nfpm",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_pool",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_owner",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "platformFeeBasisPoint",
+            "type": "uint16"
+          },
+          {
+            "internalType": "address",
+            "name": "platformFeeRecipient",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16",
+            "name": "ownerFeeBasisPoint",
+            "type": "uint16"
+          }
+        ],
+        "internalType": "struct IKrystalVaultCommon.VaultConfig",
+        "name": "_config",
+        "type": "tuple"
+      },
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "symbol",
+        "type": "string"
+      },
+      {
+        "internalType": "address",
+        "name": "_optimalSwapper",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_vaultAutomator",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
         "name": "owner",
         "type": "address"
       },

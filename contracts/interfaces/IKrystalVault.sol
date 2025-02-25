@@ -55,6 +55,17 @@ interface IKrystalVault is IKrystalVaultCommon {
 
   event FeeCollected(address indexed recipient, FeeType feeType, uint256 fees0, uint256 fees1);
 
+  function initialize(
+    address _nfpm,
+    address _pool,
+    address _owner,
+    VaultConfig memory _config,
+    string memory name,
+    string memory symbol,
+    address _optimalSwapper,
+    address _vaultAutomator
+  ) external;
+
   function mintPosition(
     address owner,
     int24 tickLower,
@@ -104,15 +115,18 @@ interface IKrystalVault is IKrystalVaultCommon {
 
   function getVaultOwner() external view returns (address);
 
-  function state() external view returns (
-    IUniswapV3Pool pool,
-    INonfungiblePositionManager nfpm,
-    IERC20 token0,
-    IERC20 token1,
-    uint256 currentTokenId,
-    int24 currentTickLower,
-    int24 currentTickUpper,
-    int24 tickSpacing,
-    uint24 fee
-  );
+  function state()
+    external
+    view
+    returns (
+      IUniswapV3Pool pool,
+      INonfungiblePositionManager nfpm,
+      IERC20 token0,
+      IERC20 token1,
+      uint256 currentTokenId,
+      int24 currentTickLower,
+      int24 currentTickUpper,
+      int24 tickSpacing,
+      uint24 fee
+    );
 }

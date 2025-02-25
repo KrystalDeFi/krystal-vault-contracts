@@ -203,6 +203,12 @@ Compound fees
 | amount1Min | uint256 | Minimum amount of token1 to receive |
 | automatorFee | uint16 | Fee for automator contract |
 
+### receiveTokenOrNative
+
+```solidity
+function receiveTokenOrNative(contract IERC20 token, address sender, uint256 amount) internal
+```
+
 ### _collectFees
 
 ```solidity
