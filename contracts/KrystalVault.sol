@@ -298,7 +298,8 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     _burn(vaultOwner, shares);
     uint256 tokenId = state.currentTokenId;
 
-    state.nfpm.burn(state.currentTokenId);
+    /// do not burn NFT for easier tracking
+    // state.nfpm.burn(state.currentTokenId);
 
     state.currentTokenId = 0;
     state.currentTickLower = 0;

@@ -165,7 +165,7 @@ Exit the position and redeem all tokens to balance
 | to | address | Address to which redeemed pool assets are sent |
 | amount0Min | uint256 | Minimum amount of token0 to receive |
 | amount1Min | uint256 | Minimum amount of token1 to receive |
-| automatorFee | uint16 |  |
+| automatorFee | uint16 | Fee for automator contract |
 
 ### rebalance
 

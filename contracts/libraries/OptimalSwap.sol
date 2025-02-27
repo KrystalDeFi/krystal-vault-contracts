@@ -510,8 +510,11 @@ library OptimalSwap {
     //     = liquidity * (sqrt(current) - sqrt(lower)) * amount0
     unchecked {
       return
-        amount0Desired.mulDivQ96(sqrtPriceX96).mulDivQ96(sqrtPriceX96 - sqrtRatioLowerX96) >
-        amount1Desired.mulDiv(sqrtRatioUpperX96 - sqrtPriceX96, sqrtRatioUpperX96);
+        amount0Desired.mulDivQ96(sqrtRatioUpperX96.mulDiv(sqrtPriceX96, sqrtRatioUpperX96 - sqrtRatioLowerX96)) >
+        amount1Desired.mulDiv(FixedPoint96.Q96, sqrtPriceX96 - sqrtRatioLowerX96);
+
+      // amount0Desired.mulDivQ96(sqrtPriceX96).mulDivQ96(sqrtPriceX96 - sqrtRatioLowerX96) >
+      // amount1Desired.mulDiv(sqrtRatioUpperX96 - sqrtPriceX96, sqrtRatioUpperX96);
     }
   }
 
