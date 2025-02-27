@@ -593,6 +593,19 @@
   {
     "inputs": [
       {
+        "internalType": "address",
+        "name": "_optimalSwapper",
+        "type": "address"
+      }
+    ],
+    "name": "setOptimalSwapper",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
         "internalType": "uint16",
         "name": "_platformFeeBasisPoint",
         "type": "uint16"

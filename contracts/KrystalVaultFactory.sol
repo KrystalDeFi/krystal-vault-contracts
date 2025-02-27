@@ -144,6 +144,12 @@ contract KrystalVaultFactory is Ownable, Pausable, IKrystalVaultFactory, IMultic
     krystalVaultAutomator = _krystalVaultAutomator;
   }
 
+  /// @notice Set the optimal swapper address
+  /// @param _optimalSwapper Address of the new optimal swapper
+  function setOptimalSwapper(address _optimalSwapper) public onlyOwner {
+    optimalSwapper = _optimalSwapper;
+  }
+
   /// @notice Set the default platform fee recipient
   /// @param _platformFeeRecipient Address of the new platform fee recipient
   function setPlatformFeeRecipient(address _platformFeeRecipient) public onlyOwner {

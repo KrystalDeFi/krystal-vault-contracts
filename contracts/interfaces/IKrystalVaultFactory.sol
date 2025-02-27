@@ -32,4 +32,14 @@ interface IKrystalVaultFactory is IKrystalVaultCommon {
   }
 
   function createVault(CreateVaultParams calldata params) external payable returns (address krystalVault);
+
+  function setKrystalVaultImplementation(address _krystalVaultImplementation) external;
+
+  function setKrystalVaultAutomator(address _krystalVaultAutomator) external;
+
+  function setOptimalSwapper(address _optimalSwapper) external;
+
+  function setPlatformFeeRecipient(address _platformFeeRecipient) external;
+
+  function setPlatformFeeBasisPoint(uint16 _platformFeeBasisPoint) external;
 }
