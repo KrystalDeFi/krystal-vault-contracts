@@ -120,6 +120,20 @@ Set the KrystalVaultAutomator address
 | ---- | ---- | ----------- |
 | _krystalVaultAutomator | address | Address of the new KrystalVaultAutomator |
 
+### setOptimalSwapper
+
+```solidity
+function setOptimalSwapper(address _optimalSwapper) public
+```
+
+Set the optimal swapper address
+
+#### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _optimalSwapper | address | Address of the new optimal swapper |
+
 ### setPlatformFeeRecipient
 
 ```solidity

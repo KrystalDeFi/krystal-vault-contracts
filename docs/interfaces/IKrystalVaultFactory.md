@@ -38,3 +38,33 @@ struct CreateVaultParams {
 function createVault(struct IKrystalVaultFactory.CreateVaultParams params) external payable returns (address krystalVault)
 ```
 
+### setKrystalVaultImplementation
+
+```solidity
+function setKrystalVaultImplementation(address _krystalVaultImplementation) external
+```
+
+### setKrystalVaultAutomator
+
+```solidity
+function setKrystalVaultAutomator(address _krystalVaultAutomator) external
+```
+
+### setOptimalSwapper
+
+```solidity
+function setOptimalSwapper(address _optimalSwapper) external
+```
+
+### setPlatformFeeRecipient
+
+```solidity
+function setPlatformFeeRecipient(address _platformFeeRecipient) external
+```
+
+### setPlatformFeeBasisPoint
+
+```solidity
+function setPlatformFeeBasisPoint(uint16 _platformFeeBasisPoint) external
+```
+

@@ -275,5 +275,70 @@
     ],
     "stateMutability": "payable",
     "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_krystalVaultAutomator",
+        "type": "address"
+      }
+    ],
+    "name": "setKrystalVaultAutomator",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_krystalVaultImplementation",
+        "type": "address"
+      }
+    ],
+    "name": "setKrystalVaultImplementation",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_optimalSwapper",
+        "type": "address"
+      }
+    ],
+    "name": "setOptimalSwapper",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint16",
+        "name": "_platformFeeBasisPoint",
+        "type": "uint16"
+      }
+    ],
+    "name": "setPlatformFeeBasisPoint",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_platformFeeRecipient",
+        "type": "address"
+      }
+    ],
+    "name": "setPlatformFeeRecipient",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ]
