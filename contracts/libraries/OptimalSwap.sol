@@ -508,10 +508,13 @@ library OptimalSwap {
     // amount1 = liquidity * (sqrt(current) - sqrt(lower))
     // amount0 * amount1 = liquidity * (sqrt(upper) - sqrt(current)) / (sqrt(upper) * sqrt(current)) * amount1
     //     = liquidity * (sqrt(current) - sqrt(lower)) * amount0
+    // The below formations are better since it support small number
+    // liquidity0 = amount0 * sqrt(upper) * sqrt(current) / (sqrt(upper) - sqrt(current))
+    // liquidity1 = amount1 / (sqrt(current) - sqrt(lower))
     unchecked {
       return
-        amount0Desired.mulDivQ96(sqrtPriceX96).mulDivQ96(sqrtPriceX96 - sqrtRatioLowerX96) >
-        amount1Desired.mulDiv(sqrtRatioUpperX96 - sqrtPriceX96, sqrtRatioUpperX96);
+        amount0Desired.mulDivQ96(sqrtRatioUpperX96).mulDiv(sqrtPriceX96, sqrtRatioUpperX96 - sqrtPriceX96) >
+        amount1Desired.mulDiv(FixedPoint96.Q96, sqrtPriceX96 - sqrtRatioLowerX96);
     }
   }
 
