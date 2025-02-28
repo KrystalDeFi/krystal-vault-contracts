@@ -26,6 +26,11 @@
   },
   {
     "inputs": [],
+    "name": "SameToken",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "SlippageError",
     "type": "error"
   },
@@ -73,6 +78,100 @@
       }
     ],
     "name": "Swap",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "nfpm",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "userAddress",
+        "type": "address"
+      },
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "token0",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "token1",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "token2",
+            "type": "address"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount0",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount1",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "amount2",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "feeAmount0",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "feeAmount1",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "feeAmount2",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint64",
+            "name": "feeX64",
+            "type": "uint64"
+          },
+          {
+            "internalType": "enum IKrystalVaultZapper.FeeType",
+            "name": "feeType",
+            "type": "uint8"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct IKrystalVaultZapper.DeductFeesEventData",
+        "name": "data",
+        "type": "tuple"
+      }
+    ],
+    "name": "VaultDeductFees",
     "type": "event"
   },
   {
@@ -208,11 +307,6 @@
         "internalType": "string",
         "name": "vaultSymbol",
         "type": "string"
-      },
-      {
-        "internalType": "bool",
-        "name": "unwrap",
-        "type": "bool"
       }
     ],
     "name": "swapAndCreateVault",
@@ -223,7 +317,7 @@
         "type": "address"
       }
     ],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   },
   {
@@ -323,7 +417,7 @@
     ],
     "name": "swapAndDeposit",
     "outputs": [],
-    "stateMutability": "nonpayable",
+    "stateMutability": "payable",
     "type": "function"
   }
 ]

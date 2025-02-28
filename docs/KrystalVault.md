@@ -2,8 +2,8 @@
 
 ## KrystalVault
 
-A Uniswap V2-like interface with fungible liquidity to Uniswap V3
-which allows for arbitrary liquidity provision: one-sided, lop-sided, and balanced
+A Uniswap V2-like interface with fungible liquidity to Uniswap V3 which allows for arbitrary liquidity provision:
+one-sided, lop-sided, and balanced
 
 ### ADMIN_ROLE_HASH
 
@@ -67,16 +67,16 @@ function initialize(address _nfpm, address _pool, address _owner, struct IKrysta
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _nfpm | address | Uniswap V3 nonfungible position manager address |
-| _pool | address | Uniswap V3 pool address |
-| _owner | address | Owner of the KrystalVault |
-| _config | struct IKrystalVaultCommon.VaultConfig | Configuration of the KrystalVault |
-| name | string | Name of the KrystalVault |
-| symbol | string | Symbol of the KrystalVault |
-| _optimalSwapper | address | Address of the optimal swapper |
-| _vaultAutomator | address | Address of the vault automator |
+| Name             | Type                                   | Description                                     |
+| ---------------- | -------------------------------------- | ----------------------------------------------- |
+| \_nfpm           | address                                | Uniswap V3 nonfungible position manager address |
+| \_pool           | address                                | Uniswap V3 pool address                         |
+| \_owner          | address                                | Owner of the KrystalVault                       |
+| \_config         | struct IKrystalVaultCommon.VaultConfig | Configuration of the KrystalVault               |
+| name             | string                                 | Name of the KrystalVault                        |
+| symbol           | string                                 | Symbol of the KrystalVault                      |
+| \_optimalSwapper | address                                | Address of the optimal swapper                  |
+| \_vaultAutomator | address                                | Address of the vault automator                  |
 
 ### onlyVaultFactory
 
@@ -94,13 +94,13 @@ Mint a new position
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| owner | address | Address of the owner of the position |
-| tickLower | int24 | The lower tick of the base position |
-| tickUpper | int24 | The upper tick of the base position |
-| amount0Min | uint256 | Minimum amount of token0 to deposit |
-| amount1Min | uint256 | Minimum amount of token1 to deposit |
+| Name       | Type    | Description                          |
+| ---------- | ------- | ------------------------------------ |
+| owner      | address | Address of the owner of the position |
+| tickLower  | int24   | The lower tick of the base position  |
+| tickUpper  | int24   | The upper tick of the base position  |
+| amount0Min | uint256 | Minimum amount of token0 to deposit  |
+| amount1Min | uint256 | Minimum amount of token1 to deposit  |
 
 ### deposit
 
@@ -112,18 +112,18 @@ Deposit tokens
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| amount0Desired | uint256 | Desired amount of token0 to deposit |
-| amount1Desired | uint256 | Desired amount of token1 to deposit |
-| amount0Min | uint256 | Minimum amount of token0 to deposit |
-| amount1Min | uint256 | Minimum amount of token1 to deposit |
-| to | address | Address to which liquidity tokens are sent |
+| Name           | Type    | Description                                |
+| -------------- | ------- | ------------------------------------------ |
+| amount0Desired | uint256 | Desired amount of token0 to deposit        |
+| amount1Desired | uint256 | Desired amount of token1 to deposit        |
+| amount0Min     | uint256 | Minimum amount of token0 to deposit        |
+| amount1Min     | uint256 | Minimum amount of token1 to deposit        |
+| to             | address | Address to which liquidity tokens are sent |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name   | Type    | Description                                                |
+| ------ | ------- | ---------------------------------------------------------- |
 | shares | uint256 | Quantity of liquidity tokens minted as a result of deposit |
 
 ### withdraw
@@ -136,17 +136,17 @@ Withdraw liquidity tokens and receive the tokens
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| shares | uint256 | Number of liquidity tokens to redeem as pool assets |
-| to | address | Address to which redeemed pool assets are sent |
-| amount0Min | uint256 | Minimum amount of token0 to receive |
-| amount1Min | uint256 | Minimum amount of token1 to receive |
+| Name       | Type    | Description                                         |
+| ---------- | ------- | --------------------------------------------------- |
+| shares     | uint256 | Number of liquidity tokens to redeem as pool assets |
+| to         | address | Address to which redeemed pool assets are sent      |
+| amount0Min | uint256 | Minimum amount of token0 to receive                 |
+| amount1Min | uint256 | Minimum amount of token1 to receive                 |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name    | Type    | Description                                                 |
+| ------- | ------- | ----------------------------------------------------------- |
 | amount0 | uint256 | Amount of token0 redeemed by the submitted liquidity tokens |
 | amount1 | uint256 | Amount of token1 redeemed by the submitted liquidity tokens |
 
@@ -160,12 +160,12 @@ Exit the position and redeem all tokens to balance
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| to | address | Address to which redeemed pool assets are sent |
-| amount0Min | uint256 | Minimum amount of token0 to receive |
-| amount1Min | uint256 | Minimum amount of token1 to receive |
-| automatorFee | uint16 | Fee for automator contract |
+| Name         | Type    | Description                                    |
+| ------------ | ------- | ---------------------------------------------- |
+| to           | address | Address to which redeemed pool assets are sent |
+| amount0Min   | uint256 | Minimum amount of token0 to receive            |
+| amount1Min   | uint256 | Minimum amount of token1 to receive            |
+| automatorFee | uint16  | Fee for automator contract                     |
 
 ### rebalance
 
@@ -177,15 +177,15 @@ Rebalance position to new range
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _newTickLower | int24 | The lower tick of the base position |
-| _newTickUpper | int24 | The upper tick of the base position |
+| Name                | Type    | Description                            |
+| ------------------- | ------- | -------------------------------------- |
+| \_newTickLower      | int24   | The lower tick of the base position    |
+| \_newTickUpper      | int24   | The upper tick of the base position    |
 | decreasedAmount0Min | uint256 | min amount0 returned for shares of liq |
 | decreasedAmount1Min | uint256 | min amount1 returned for shares of liq |
-| amount0Min | uint256 | min amount0 returned for shares of liq |
-| amount1Min | uint256 | min amount1 returned for shares of liq |
-| automatorFee | uint16 | fee for automator contract |
+| amount0Min          | uint256 | min amount0 returned for shares of liq |
+| amount1Min          | uint256 | min amount1 returned for shares of liq |
+| automatorFee        | uint16  | fee for automator contract             |
 
 ### compound
 
@@ -197,11 +197,11 @@ Compound fees
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| amount0Min | uint256 | Minimum amount of token0 to receive |
-| amount1Min | uint256 | Minimum amount of token1 to receive |
-| automatorFee | uint16 | Fee for automator contract |
+| Name         | Type    | Description                         |
+| ------------ | ------- | ----------------------------------- |
+| amount0Min   | uint256 | Minimum amount of token0 to receive |
+| amount1Min   | uint256 | Minimum amount of token1 to receive |
+| automatorFee | uint16  | Fee for automator contract          |
 
 ### receiveTokenOrNative
 
@@ -209,7 +209,7 @@ Compound fees
 function receiveTokenOrNative(contract IERC20 token, address sender, uint256 amount) internal
 ```
 
-### _collectFees
+### \_collectFees
 
 ```solidity
 function _collectFees(uint16 automatorFeeBasisPoint) internal returns (uint128 liquidity)
@@ -217,7 +217,7 @@ function _collectFees(uint16 automatorFeeBasisPoint) internal returns (uint128 l
 
 Collect fees
 
-### _mintLiquidity
+### \_mintLiquidity
 
 ```solidity
 function _mintLiquidity(struct INonfungiblePositionManager.MintParams params) internal returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1)
@@ -227,20 +227,20 @@ Create position
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name   | Type                                          | Description     |
+| ------ | --------------------------------------------- | --------------- |
 | params | struct INonfungiblePositionManager.MintParams | Mint parameters |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tokenId | uint256 | The ID of the token that represents the minted position |
-| liquidity | uint128 | The amount of liquidity for this position |
-| amount0 | uint256 | The amount of token0 |
-| amount1 | uint256 | The amount of token1 |
+| Name      | Type    | Description                                             |
+| --------- | ------- | ------------------------------------------------------- |
+| tokenId   | uint256 | The ID of the token that represents the minted position |
+| liquidity | uint128 | The amount of liquidity for this position               |
+| amount0   | uint256 | The amount of token0                                    |
+| amount1   | uint256 | The amount of token1                                    |
 
-### _decreaseLiquidityAndCollectFees
+### \_decreaseLiquidityAndCollectFees
 
 ```solidity
 function _decreaseLiquidityAndCollectFees(uint128 liquidity, address to, bool collectAll, uint256 amount0Min, uint256 amount1Min) internal returns (uint256 amount0, uint256 amount1)
@@ -250,22 +250,22 @@ Decrease liquidity from the sender and collect tokens owed for the liquidity
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidity | uint128 | The amount of liquidity to burn |
-| to | address | The address which should receive the fees collected |
-| collectAll | bool | If true, collect all tokens owed in the pool, else collect the owed tokens of the burn |
-| amount0Min | uint256 |  |
-| amount1Min | uint256 |  |
+| Name       | Type    | Description                                                                            |
+| ---------- | ------- | -------------------------------------------------------------------------------------- |
+| liquidity  | uint128 | The amount of liquidity to burn                                                        |
+| to         | address | The address which should receive the fees collected                                    |
+| collectAll | bool    | If true, collect all tokens owed in the pool, else collect the owed tokens of the burn |
+| amount0Min | uint256 |                                                                                        |
+| amount1Min | uint256 |                                                                                        |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name    | Type    | Description                            |
+| ------- | ------- | -------------------------------------- |
 | amount0 | uint256 | The amount of fees collected in token0 |
 | amount1 | uint256 | The amount of fees collected in token1 |
 
-### _liquidityForShares
+### \_liquidityForShares
 
 ```solidity
 function _liquidityForShares(uint256 shares) internal view returns (uint128)
@@ -275,17 +275,17 @@ Get the liquidity amount for given liquidity tokens
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name   | Type    | Description        |
+| ------ | ------- | ------------------ |
 | shares | uint256 | Shares of position |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint128 | The amount of liquidity token for shares |
+| Name | Type    | Description                              |
+| ---- | ------- | ---------------------------------------- |
+| [0]  | uint128 | The amount of liquidity token for shares |
 
-### _position
+### \_position
 
 ```solidity
 function _position() internal view returns (uint128 liquidity, uint128 tokensOwed0, uint128 tokensOwed1)
@@ -295,11 +295,11 @@ Get the info of the given position
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidity | uint128 | The amount of liquidity of the position |
-| tokensOwed0 | uint128 | Amount of token0 owed |
-| tokensOwed1 | uint128 | Amount of token1 owed |
+| Name        | Type    | Description                             |
+| ----------- | ------- | --------------------------------------- |
+| liquidity   | uint128 | The amount of liquidity of the position |
+| tokensOwed0 | uint128 | Amount of token0 owed                   |
+| tokensOwed1 | uint128 | Amount of token1 owed                   |
 
 ### getTotalAmounts
 
@@ -311,8 +311,8 @@ Get the total amounts of token0 and token1 in the KrystalVault
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name   | Type    | Description                                                         |
+| ------ | ------- | ------------------------------------------------------------------- |
 | total0 | uint256 | Quantity of token0 in both positions and unused in the KrystalVault |
 | total1 | uint256 | Quantity of token1 in both positions and unused in the KrystalVault |
 
@@ -326,13 +326,13 @@ Get the base position info
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| liquidity | uint128 | Amount of total liquidity in the base position |
-| amount0 | uint256 | Estimated amount of token0 that could be collected by burning the base position |
-| amount1 | uint256 | Estimated amount of token1 that could be collected by burning the base position |
+| Name      | Type    | Description                                                                     |
+| --------- | ------- | ------------------------------------------------------------------------------- |
+| liquidity | uint128 | Amount of total liquidity in the base position                                  |
+| amount0   | uint256 | Estimated amount of token0 that could be collected by burning the base position |
+| amount1   | uint256 | Estimated amount of token1 that could be collected by burning the base position |
 
-### _amountsForLiquidity
+### \_amountsForLiquidity
 
 ```solidity
 function _amountsForLiquidity(int24 tickLower, int24 tickUpper, uint128 liquidity) internal view returns (uint256, uint256)
@@ -342,18 +342,18 @@ Get the amounts of the given numbers of liquidity tokens
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| tickLower | int24 | The lower tick of the position |
-| tickUpper | int24 | The upper tick of the position |
+| Name      | Type    | Description                    |
+| --------- | ------- | ------------------------------ |
+| tickLower | int24   | The lower tick of the position |
+| tickUpper | int24   | The upper tick of the position |
 | liquidity | uint128 | The amount of liquidity tokens |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint256 | Amount of token0 and token1 |
-| [1] | uint256 |  |
+| Name | Type    | Description                 |
+| ---- | ------- | --------------------------- |
+| [0]  | uint256 | Amount of token0 and token1 |
+| [1]  | uint256 |                             |
 
 ### currentTick
 
@@ -365,11 +365,11 @@ Get the current price tick of the Uniswap pool
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name | Type  | Description                       |
+| ---- | ----- | --------------------------------- |
 | tick | int24 | Uniswap pool's current price tick |
 
-### _optimalSwap
+### \_optimalSwap
 
 ```solidity
 function _optimalSwap(int24 tickLower, int24 tickUpper) internal
@@ -379,8 +379,8 @@ _Swap tokens to the optimal ratio to add liquidity in the same pool_
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
+| Name      | Type  | Description                    |
+| --------- | ----- | ------------------------------ |
 | tickLower | int24 | The lower tick of the position |
 | tickUpper | int24 | The upper tick of the position |
 
@@ -394,9 +394,9 @@ grant admin role to the address
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _address | address | The address to which the admin role is granted |
+| Name      | Type    | Description                                    |
+| --------- | ------- | ---------------------------------------------- |
+| \_address | address | The address to which the admin role is granted |
 
 ### revokeAdminRole
 
@@ -408,11 +408,11 @@ revoke admin role from the address
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| _address | address | The address from which the admin role is revoked |
+| Name      | Type    | Description                                      |
+| --------- | ------- | ------------------------------------------------ |
+| \_address | address | The address from which the admin role is revoked |
 
-### _uint128Safe
+### \_uint128Safe
 
 ```solidity
 function _uint128Safe(uint256 x) internal pure returns (uint128)
@@ -422,15 +422,15 @@ _Safely convert a uint256 to a uint128_
 
 #### Parameters
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| x | uint256 | The uint256 to be converted |
+| Name | Type    | Description                 |
+| ---- | ------- | --------------------------- |
+| x    | uint256 | The uint256 to be converted |
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | uint128 | The uint128 value |
+| Name | Type    | Description       |
+| ---- | ------- | ----------------- |
+| [0]  | uint128 | The uint128 value |
 
 ### getVaultOwner
 
@@ -442,7 +442,6 @@ Get the owner of the KrystalVault
 
 #### Return Values
 
-| Name | Type | Description |
-| ---- | ---- | ----------- |
-| [0] | address | The address of the owner |
-
+| Name | Type    | Description              |
+| ---- | ------- | ------------------------ |
+| [0]  | address | The address of the owner |

@@ -15,10 +15,55 @@ interface IKrystalVaultZapper {
   error TooMuchEtherSent();
   error TooMuchFee();
   error NoFees();
+  error SameToken();
 
   event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
 
-  /// @notice protocol to provide lp
+  struct DeductFeesEventData {
+    address token0;
+    address token1;
+    address token2;
+    uint256 amount0;
+    uint256 amount1;
+    uint256 amount2;
+    uint256 feeAmount0;
+    uint256 feeAmount1;
+    uint256 feeAmount2;
+    uint64 feeX64;
+    FeeType feeType;
+  }
+
+  event VaultDeductFees(
+    address indexed vault,
+    address indexed nfpm,
+    uint256 indexed tokenId,
+    address userAddress,
+    DeductFeesEventData data
+  );
+
+  enum FeeType {
+    GAS_FEE,
+    LIQUIDITY_FEE,
+    PERFORMANCE_FEE
+  }
+
+  struct DeductFeesParams {
+    uint256 amount0;
+    uint256 amount1;
+    uint256 amount2;
+    uint64 feeX64;
+    FeeType feeType;
+    // readonly params for emitting events
+    address vaultFactory;
+    address vault;
+    address nfpm;
+    uint256 tokenId;
+    address userAddress;
+    address token0;
+    address token1;
+    address token2;
+  }
+
   enum Protocol {
     UNI_V3,
     ALGEBRA_V1
@@ -59,9 +104,8 @@ interface IKrystalVaultZapper {
     SwapAndCreateVaultParams memory params,
     uint16 ownerFeeBasisPoint,
     string memory vaultName,
-    string memory vaultSymbol,
-    bool unwrap
-  ) external returns (address);
+    string memory vaultSymbol
+  ) external payable returns (address);
 
   /// @notice Params for swapAndIncreaseLiquidity() function
   struct SwapAndDepositParams {
@@ -89,5 +133,5 @@ interface IKrystalVaultZapper {
     uint64 protocolFeeX64;
   }
 
-  function swapAndDeposit(SwapAndDepositParams memory params) external;
+  function swapAndDeposit(SwapAndDepositParams memory params) external payable;
 }

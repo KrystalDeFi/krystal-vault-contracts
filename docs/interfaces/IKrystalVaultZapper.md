@@ -139,4 +139,3 @@ struct SwapAndDepositParams {
 ```solidity
 function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external
 ```
-

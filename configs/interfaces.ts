@@ -19,6 +19,7 @@ export interface IConfig {
   };
   uniswapV3Factory?: string;
   automatorAddress?: string;
+  krystalSwapRouter?: string;
   // For platform fee recipient
   platformFeeRecipient?: string;
   // For platform fee in basis point
@@ -29,4 +30,5 @@ export interface IConfig {
 
 export interface ITestConfig {
   nfpm: string;
+  krystalSwapRouter: string;
 }

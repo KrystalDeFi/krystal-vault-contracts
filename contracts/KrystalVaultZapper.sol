@@ -18,7 +18,7 @@ interface IWETH9 is IERC20 {
   function withdraw(uint256) external;
 }
 
-contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
+contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
   bytes32 public constant WITHDRAWER_ROLE = keccak256("WITHDRAWER_ROLE");
   bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
@@ -52,9 +52,83 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
     SwapAndCreateVaultParams calldata params,
     uint16 ownerFeeBasisPoint,
     string memory vaultName,
+    string memory vaultSymbol
+  ) external payable override returns (address vault) {
+    if (params.token0 == params.token1) {
+      revert SameToken();
+    }
+    IWETH9 weth = _getWeth9(address(params.nfpm), params.protocol);
+
+    // validate if amount2 is enough for action
+    if (
+      params.swapSourceToken != params.token0 &&
+      params.swapSourceToken != params.token1 &&
+      params.amountIn0 + params.amountIn1 > params.amount2
+    ) {
+      revert AmountError();
+    }
+    _prepareSwap(
+      weth,
+      params.token0,
+      params.token1,
+      params.swapSourceToken,
+      params.amount0,
+      params.amount1,
+      params.amount2
+    );
+    SwapAndCreateVaultParams memory _params = params;
+
+    DeductFeesEventData memory eventData;
+    if (params.protocolFeeX64 > 0) {
+      uint256 feeAmount0;
+      uint256 feeAmount1;
+      uint256 feeAmount2;
+      // since we do not have the tokenId here, we need to emit event later
+      (_params.amount0, _params.amount1, _params.amount2, feeAmount0, feeAmount1, feeAmount2) = _deductFees(
+        DeductFeesParams(
+          params.amount0,
+          params.amount1,
+          params.amount2,
+          params.protocolFeeX64,
+          FeeType.LIQUIDITY_FEE,
+          address(0),
+          address(0),
+          address(params.nfpm),
+          0,
+          params.recipient,
+          address(params.token0),
+          address(params.token1),
+          address(params.swapSourceToken)
+        ),
+        false
+      );
+
+      eventData = DeductFeesEventData({
+        token0: address(params.token0),
+        token1: address(params.token1),
+        token2: address(params.swapSourceToken),
+        amount0: params.amount0,
+        amount1: params.amount1,
+        amount2: params.amount2,
+        feeAmount0: feeAmount0,
+        feeAmount1: feeAmount1,
+        feeAmount2: feeAmount2,
+        feeX64: params.protocolFeeX64,
+        feeType: FeeType.LIQUIDITY_FEE
+      });
+    }
+    vault = _swapAndCreateVault(_params, ownerFeeBasisPoint, vaultName, vaultSymbol, false);
+    (, , , , uint256 currentTokenId, , , , ) = IKrystalVault(vault).state();
+    emit VaultDeductFees(vault, address(params.nfpm), currentTokenId, params.recipient, eventData);
+  }
+
+  function _swapAndCreateVault(
+    SwapAndCreateVaultParams memory params,
+    uint16 ownerFeeBasisPoint,
+    string memory vaultName,
     string memory vaultSymbol,
     bool unwrap
-  ) external override returns (address vault) {
+  ) internal returns (address vault) {
     // Implement zapIn logic
     (uint256 total0, uint256 total1) = _swapAndPrepareAmounts(params, unwrap);
 
@@ -85,7 +159,7 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
   /// @notice Does 1 or 2 swaps from swapSourceToken to token0 and token1 and adds as much as possible liquidity to an existing vault
   /// @param params Swap and add to vault
   /// Send left-over to recipient
-  function swapAndDeposit(SwapAndDepositParams memory params) external {
+  function swapAndDeposit(SwapAndDepositParams memory params) external payable {
     (, INonfungiblePositionManager nfpm, IERC20 token0, IERC20 token1, uint256 currentTokenId, , , , ) = params
       .vault
       .state();
@@ -118,6 +192,8 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
           params.amount2,
           params.protocolFeeX64,
           FeeType.LIQUIDITY_FEE,
+          address(vaultFactory),
+          address(params.vault),
           address(nfpm),
           currentTokenId,
           params.recipient,
@@ -199,10 +275,10 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
     }
 
     if (total0 != 0) {
-      _safeResetAndApprove(params.token0, address(params.nfpm), total0);
+      _safeResetAndApprove(params.token0, address(vaultFactory), total0);
     }
     if (total1 != 0) {
-      _safeResetAndApprove(params.token1, address(params.nfpm), total1);
+      _safeResetAndApprove(params.token1, address(vaultFactory), total1);
     }
   }
 
@@ -223,9 +299,11 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
       // approve needed amount
       _safeApprove(tokenIn, swapRouter, amountIn);
       // execute swap
-      (bool success, ) = swapRouter.call(swapData);
+      (bool success, bytes memory data) = swapRouter.call(swapData);
       if (!success) {
-        revert("swap failed!");
+        assembly {
+          revert(add(32, data), mload(data))
+        }
       }
 
       // reset approval
@@ -359,45 +437,6 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
     }
   }
 
-  struct DeductFeesEventData {
-    address token0;
-    address token1;
-    address token2;
-    uint256 amount0;
-    uint256 amount1;
-    uint256 amount2;
-    uint256 feeAmount0;
-    uint256 feeAmount1;
-    uint256 feeAmount2;
-    uint64 feeX64;
-    FeeType feeType;
-  }
-
-  event DeductFees(
-    address indexed nfpm,
-    uint256 indexed tokenId,
-    address indexed userAddress,
-    DeductFeesEventData data
-  );
-  enum FeeType {
-    GAS_FEE,
-    LIQUIDITY_FEE,
-    PERFORMANCE_FEE
-  }
-  struct DeductFeesParams {
-    uint256 amount0;
-    uint256 amount1;
-    uint256 amount2;
-    uint64 feeX64;
-    FeeType feeType;
-    // readonly params for emitting events
-    address nfpm;
-    uint256 tokenId;
-    address userAddress;
-    address token0;
-    address token1;
-    address token2;
-  }
   /**
    * @notice calculate fee
    * @param emitEvent: whether to emit event or not. Since swap and mint have not had token id yet.
@@ -450,7 +489,8 @@ contract KrysalVaultZapper is AccessControl, IKrystalVaultZapper {
     }
 
     if (emitEvent) {
-      emit DeductFees(
+      emit VaultDeductFees(
+        address(params.vaultFactory),
         address(params.nfpm),
         params.tokenId,
         params.userAddress,
