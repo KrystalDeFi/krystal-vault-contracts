@@ -56,15 +56,73 @@ error TooMuchFee()
 error NoFees()
 ```
 
+### SameToken
+
+```solidity
+error SameToken()
+```
+
 ### Swap
 
 ```solidity
 event Swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)
 ```
 
-### Protocol
+### DeductFeesEventData
 
-protocol to provide lp
+```solidity
+struct DeductFeesEventData {
+  address token0;
+  address token1;
+  address token2;
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  uint256 feeAmount0;
+  uint256 feeAmount1;
+  uint256 feeAmount2;
+  uint64 feeX64;
+  enum IKrystalVaultZapper.FeeType feeType;
+}
+```
+
+### VaultDeductFees
+
+```solidity
+event VaultDeductFees(address vault, address nfpm, uint256 tokenId, address userAddress, struct IKrystalVaultZapper.DeductFeesEventData data)
+```
+
+### FeeType
+
+```solidity
+enum FeeType {
+  GAS_FEE,
+  LIQUIDITY_FEE,
+  PERFORMANCE_FEE
+}
+```
+
+### DeductFeesParams
+
+```solidity
+struct DeductFeesParams {
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  uint64 feeX64;
+  enum IKrystalVaultZapper.FeeType feeType;
+  address vaultFactory;
+  address vault;
+  address nfpm;
+  uint256 tokenId;
+  address userAddress;
+  address token0;
+  address token1;
+  address token2;
+}
+```
+
+### Protocol
 
 ```solidity
 enum Protocol {
@@ -105,7 +163,7 @@ struct SwapAndCreateVaultParams {
 ### swapAndCreateVault
 
 ```solidity
-function swapAndCreateVault(struct IKrystalVaultZapper.SwapAndCreateVaultParams params, uint16 ownerFeeBasisPoint, string vaultName, string vaultSymbol, bool unwrap) external returns (address)
+function swapAndCreateVault(struct IKrystalVaultZapper.SwapAndCreateVaultParams params, uint16 ownerFeeBasisPoint, string vaultName, string vaultSymbol) external payable returns (address)
 ```
 
 ### SwapAndDepositParams
@@ -137,5 +195,6 @@ struct SwapAndDepositParams {
 ### swapAndDeposit
 
 ```solidity
-function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external
+function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external payable
 ```
+

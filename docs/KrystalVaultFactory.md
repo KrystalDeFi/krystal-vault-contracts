@@ -66,14 +66,14 @@ Create a KrystalVault
 
 #### Parameters
 
-| Name   | Type                                          | Description                                    |
-| ------ | --------------------------------------------- | ---------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | params | struct IKrystalVaultFactory.CreateVaultParams | CreateVaultParams parameter for vault creation |
 
 #### Return Values
 
-| Name  | Type    | Description                     |
-| ----- | ------- | ------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | vault | address | Address of KrystalVault created |
 
 ### pause
@@ -102,9 +102,9 @@ Set the Vault implementation
 
 #### Parameters
 
-| Name                         | Type    | Description                                    |
-| ---------------------------- | ------- | ---------------------------------------------- |
-| \_krystalVaultImplementation | address | Address of the new KrystalVault implementation |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _krystalVaultImplementation | address | Address of the new KrystalVault implementation |
 
 ### setKrystalVaultAutomator
 
@@ -116,9 +116,9 @@ Set the KrystalVaultAutomator address
 
 #### Parameters
 
-| Name                    | Type    | Description                              |
-| ----------------------- | ------- | ---------------------------------------- |
-| \_krystalVaultAutomator | address | Address of the new KrystalVaultAutomator |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _krystalVaultAutomator | address | Address of the new KrystalVaultAutomator |
 
 ### setOptimalSwapper
 
@@ -130,9 +130,9 @@ Set the optimal swapper address
 
 #### Parameters
 
-| Name             | Type    | Description                        |
-| ---------------- | ------- | ---------------------------------- |
-| \_optimalSwapper | address | Address of the new optimal swapper |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _optimalSwapper | address | Address of the new optimal swapper |
 
 ### setPlatformFeeRecipient
 
@@ -144,9 +144,9 @@ Set the default platform fee recipient
 
 #### Parameters
 
-| Name                   | Type    | Description                               |
-| ---------------------- | ------- | ----------------------------------------- |
-| \_platformFeeRecipient | address | Address of the new platform fee recipient |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _platformFeeRecipient | address | Address of the new platform fee recipient |
 
 ### setPlatformFeeBasisPoint
 
@@ -158,9 +158,9 @@ Set the default platform fee basis point
 
 #### Parameters
 
-| Name                    | Type   | Description                  |
-| ----------------------- | ------ | ---------------------------- |
-| \_platformFeeBasisPoint | uint16 | New platform fee basis point |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| _platformFeeBasisPoint | uint16 | New platform fee basis point |
 
 ### multicall
 
@@ -174,12 +174,13 @@ _The `msg.value` should not be trusted for any method callable from multicall._
 
 #### Parameters
 
-| Name | Type    | Description                                                              |
-| ---- | ------- | ------------------------------------------------------------------------ |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | data | bytes[] | The encoded function data for each of the calls to make to this contract |
 
 #### Return Values
 
-| Name    | Type    | Description                                           |
-| ------- | ------- | ----------------------------------------------------- |
+| Name | Type | Description |
+| ---- | ---- | ----------- |
 | results | bytes[] | The results from each of the calls passed in via data |
+
