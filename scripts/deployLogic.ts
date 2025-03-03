@@ -1,9 +1,13 @@
 import { ethers, network, run } from "hardhat";
 import { NetworkConfig } from "../configs/networkConfig";
 import { KrystalVault, KrystalVaultFactory, PoolOptimalSwapper, KrystalVaultAutomator } from "../typechain-types";
-import { BaseContract } from "ethers";
+import { BaseContract, encodeBytes32String, solidityPacked } from "ethers";
 import { IConfig } from "../configs/interfaces";
 import { sleep } from "./helpers";
+import { last } from "lodash";
+
+const { SALT } = process.env;
+const createXContractAddress = "0xba5ed099633d3b313e4d5f7bdc1305d3c28ba5ed";
 
 const networkConfig = NetworkConfig[network.name];
 if (!networkConfig) {
@@ -123,12 +127,15 @@ export const deployKrystalVaultFactoryContract = async (
       "KrystalVaultFactory",
       existingContract?.["krystalVaultFactory"],
       "contracts/KrystalVaultFactory.sol:KrystalVaultFactory",
-      config.uniswapV3Factory,
-      existingContract?.["krystalVault"] || contracts?.krystalVault?.target,
-      existingContract?.["krystalVaultAutomator"] || contracts?.krystalVaultAutomator?.target,
-      existingContract?.["poolOptimalSwapper"] || contracts?.poolOptimalSwapper?.target,
-      config.platformFeeRecipient,
-      config.platformFeeBasisPoint,
+      ["address", "address", "address", "address", "address", "uint16"],
+      [
+        config.uniswapV3Factory,
+        existingContract?.["krystalVault"] || contracts?.krystalVault?.target,
+        existingContract?.["krystalVaultAutomator"] || contracts?.krystalVaultAutomator?.target,
+        existingContract?.["poolOptimalSwapper"] || contracts?.poolOptimalSwapper?.target,
+        config.platformFeeRecipient,
+        config.platformFeeBasisPoint,
+      ],
     )) as KrystalVaultFactory;
   }
   return {
@@ -153,7 +160,8 @@ export const deployKrystalVaultAutomatorContract = async (
       "KrystalVaultAutomator",
       existingContract?.["krystalVaultAutomator"],
       "contracts/KrystalVaultAutomator.sol:KrystalVaultAutomator",
-      deployer,
+      ["address"],
+      [deployer],
     )) as KrystalVaultAutomator;
   }
   return {
@@ -167,11 +175,12 @@ async function deployContract(
   contractName: string,
   contractAddress: string | undefined,
   contractLocation: string | undefined,
-  ...args: any[]
+  argsTypes?: string[],
+  args?: any[],
 ): Promise<BaseContract> {
   log(1, `${step}. Deploying '${contractName}'`);
   log(1, "------------------------------------");
-  const factory = await ethers.getContractFactory(contractName);
+  const factory = await ethers.getContractAt("ICreateX", createXContractAddress, await ethers.provider.getSigner());
   let contract;
 
   if (contractAddress) {
@@ -180,10 +189,18 @@ async function deployContract(
     // TODO: Transfer admin if needed
     contract = factory.attach(contractAddress);
   } else {
-    contract = await factory.deploy(...args);
-    const tx = await contract.waitForDeployment();
-    const deploymentTx = tx.deploymentTransaction();
-    await printInfo(deploymentTx);
+    let bytecode = (await ethers.getContractFactory(contractName)).bytecode;
+    const encoder = new ethers.AbiCoder();
+    if (!!argsTypes?.length && !!args?.length && argsTypes.length === args.length) {
+      bytecode = solidityPacked(["bytes", "bytes"], [bytecode, encoder.encode(argsTypes || [], args)]);
+    }
+    const salt = encodeBytes32String(SALT || "");
+    const deployTx = await factory["deployCreate2(bytes32,bytes)"](salt, bytecode);
+    const txHash = deployTx.hash;
+    const txReceipt = await ethers.provider.getTransactionReceipt(txHash);
+    const contractAddress = "0x" + last(txReceipt?.logs)?.topics?.[1]?.slice(26);
+    contract = await ethers.getContractAt(contractName, contractAddress);
+    await printInfo(deployTx);
     log(2, `> address:\t${contract.target}`);
   }
 
