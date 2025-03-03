@@ -63,6 +63,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidApproval",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NoEtherToken",
     "type": "error"
   },
@@ -74,6 +79,11 @@
   {
     "inputs": [],
     "name": "NotSupportedProtocol",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResetApproveFailed",
     "type": "error"
   },
   {
@@ -340,6 +350,19 @@
   },
   {
     "inputs": [],
+    "name": "Q64",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "WITHDRAWER_ROLE",
     "outputs": [
       {
@@ -349,6 +372,13 @@
       }
     ],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "exitAndSwap",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {

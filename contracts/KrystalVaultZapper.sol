@@ -6,21 +6,14 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 
 import "@uniswap/v3-core/contracts/libraries/FullMath.sol";
 
-import "./interfaces/IKrystalVaultZapper.sol";
 import { IKrystalVaultFactory } from "./interfaces/IKrystalVaultFactory.sol";
-
-/// @title Interface for WETH9
-interface IWETH9 is IERC20 {
-  /// @notice Deposit ether to get wrapped ether
-  function deposit() external payable;
-
-  /// @notice Withdraw wrapped ether to get ether
-  function withdraw(uint256) external;
-}
+import "./interfaces/IKrystalVaultZapper.sol";
+import "./interfaces/IWETH9.sol";
 
 contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
   bytes32 public constant WITHDRAWER_ROLE = keccak256("WITHDRAWER_ROLE");
   bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
+  uint256 public constant Q64 = 2 ** 64;
 
   IKrystalVaultFactory public vaultFactory;
   address public swapRouter;
@@ -210,6 +203,10 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
     // Implement withdrawAndSwap logic
   }
 
+  function exitAndSwap() external {
+    // Implement exitAndSwap logic
+  }
+
   // swaps available tokens and prepares max amounts to be added to nfpm
   function _swapAndPrepareAmounts(
     SwapAndCreateVaultParams memory params,
@@ -331,10 +328,11 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
   /// the token not allow to approve 0, which means the following line code will work properly
   function _safeResetAndApprove(IERC20 token, address _spender, uint256 _value) internal {
     /// @dev omitted approve(0) result because it might fail and does not break the flow
-    address(token).call(abi.encodeWithSelector(token.approve.selector, _spender, 0));
+    (bool success, ) = address(token).call(abi.encodeWithSelector(token.approve.selector, _spender, 0));
+    require(success, ResetApproveFailed());
 
     /// @dev value for approval after reset must greater than 0
-    require(_value > 0);
+    require(_value > 0, InvalidApproval());
     _safeApprove(token, _spender, _value);
   }
 
@@ -456,7 +454,6 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
       uint256 feeAmount2
     )
   {
-    uint256 Q64 = 2 ** 64;
     if (params.feeX64 > _maxFeeX64[params.feeType]) {
       revert TooMuchFee();
     }

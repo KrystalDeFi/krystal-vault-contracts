@@ -11,6 +11,11 @@
   },
   {
     "inputs": [],
+    "name": "InvalidApproval",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NoEtherToken",
     "type": "error"
   },
@@ -22,6 +27,11 @@
   {
     "inputs": [],
     "name": "NotSupportedProtocol",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "ResetApproveFailed",
     "type": "error"
   },
   {

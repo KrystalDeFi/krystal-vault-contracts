@@ -6,19 +6,6 @@ import "@uniswap/v3-periphery/contracts/interfaces/INonfungiblePositionManager.s
 import { IKrystalVault } from "./IKrystalVault.sol";
 
 interface IKrystalVaultZapper {
-  error AmountError();
-  error SlippageError();
-  error EtherSendFailed();
-  error NotSupportedProtocol();
-  error TransferError();
-  error NoEtherToken();
-  error TooMuchEtherSent();
-  error TooMuchFee();
-  error NoFees();
-  error SameToken();
-
-  event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
-
   struct DeductFeesEventData {
     address token0;
     address token1;
@@ -31,20 +18,6 @@ interface IKrystalVaultZapper {
     uint256 feeAmount2;
     uint64 feeX64;
     FeeType feeType;
-  }
-
-  event VaultDeductFees(
-    address indexed vault,
-    address indexed nfpm,
-    uint256 indexed tokenId,
-    address userAddress,
-    DeductFeesEventData data
-  );
-
-  enum FeeType {
-    GAS_FEE,
-    LIQUIDITY_FEE,
-    PERFORMANCE_FEE
   }
 
   struct DeductFeesParams {
@@ -62,11 +35,6 @@ interface IKrystalVaultZapper {
     address token0;
     address token1;
     address token2;
-  }
-
-  enum Protocol {
-    UNI_V3,
-    ALGEBRA_V1
   }
 
   struct SwapAndCreateVaultParams {
@@ -98,6 +66,51 @@ interface IKrystalVaultZapper {
     // min amount to be added after swap
     uint256 amountAddMin0;
     uint256 amountAddMin1;
+  }
+
+  error AmountError();
+
+  error SlippageError();
+
+  error EtherSendFailed();
+
+  error NotSupportedProtocol();
+
+  error TransferError();
+
+  error ResetApproveFailed();
+
+  error NoEtherToken();
+
+  error TooMuchEtherSent();
+
+  error TooMuchFee();
+
+  error NoFees();
+
+  error SameToken();
+
+  error InvalidApproval();
+
+  event Swap(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut);
+
+  event VaultDeductFees(
+    address indexed vault,
+    address indexed nfpm,
+    uint256 indexed tokenId,
+    address userAddress,
+    DeductFeesEventData data
+  );
+
+  enum FeeType {
+    GAS_FEE,
+    LIQUIDITY_FEE,
+    PERFORMANCE_FEE
+  }
+
+  enum Protocol {
+    UNI_V3,
+    ALGEBRA_V1
   }
 
   function swapAndCreateVault(
