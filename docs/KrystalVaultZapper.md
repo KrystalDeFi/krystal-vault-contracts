@@ -1,23 +1,5 @@
 # Solidity API
 
-## IWETH9
-
-### deposit
-
-```solidity
-function deposit() external payable
-```
-
-Deposit ether to get wrapped ether
-
-### withdraw
-
-```solidity
-function withdraw(uint256) external
-```
-
-Withdraw wrapped ether to get ether
-
 ## KrystalVaultZapper
 
 ### WITHDRAWER_ROLE
@@ -30,6 +12,12 @@ bytes32 WITHDRAWER_ROLE
 
 ```solidity
 bytes32 ADMIN_ROLE
+```
+
+### Q64
+
+```solidity
+uint256 Q64
 ```
 
 ### vaultFactory
@@ -103,6 +91,12 @@ Does 1 or 2 swaps from swapSourceToken to token0 and token1 and adds as much as 
 
 ```solidity
 function withdrawAndSwap() external
+```
+
+### exitAndSwap
+
+```solidity
+function exitAndSwap() external
 ```
 
 ### _swapAndPrepareAmounts

@@ -2,6 +2,73 @@
 
 ## IKrystalVaultZapper
 
+### DeductFeesEventData
+
+```solidity
+struct DeductFeesEventData {
+  address token0;
+  address token1;
+  address token2;
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  uint256 feeAmount0;
+  uint256 feeAmount1;
+  uint256 feeAmount2;
+  uint64 feeX64;
+  enum IKrystalVaultZapper.FeeType feeType;
+}
+```
+
+### DeductFeesParams
+
+```solidity
+struct DeductFeesParams {
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  uint64 feeX64;
+  enum IKrystalVaultZapper.FeeType feeType;
+  address vaultFactory;
+  address vault;
+  address nfpm;
+  uint256 tokenId;
+  address userAddress;
+  address token0;
+  address token1;
+  address token2;
+}
+```
+
+### SwapAndCreateVaultParams
+
+```solidity
+struct SwapAndCreateVaultParams {
+  enum IKrystalVaultZapper.Protocol protocol;
+  contract INonfungiblePositionManager nfpm;
+  contract IERC20 token0;
+  contract IERC20 token1;
+  uint24 fee;
+  int24 tickLower;
+  int24 tickUpper;
+  uint64 protocolFeeX64;
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  address recipient;
+  uint256 deadline;
+  contract IERC20 swapSourceToken;
+  uint256 amountIn0;
+  uint256 amountOut0Min;
+  bytes swapData0;
+  uint256 amountIn1;
+  uint256 amountOut1Min;
+  bytes swapData1;
+  uint256 amountAddMin0;
+  uint256 amountAddMin1;
+}
+```
+
 ### AmountError
 
 ```solidity
@@ -30,6 +97,12 @@ error NotSupportedProtocol()
 
 ```solidity
 error TransferError()
+```
+
+### ResetApproveFailed
+
+```solidity
+error ResetApproveFailed()
 ```
 
 ### NoEtherToken
@@ -62,28 +135,16 @@ error NoFees()
 error SameToken()
 ```
 
+### InvalidApproval
+
+```solidity
+error InvalidApproval()
+```
+
 ### Swap
 
 ```solidity
 event Swap(address tokenIn, address tokenOut, uint256 amountIn, uint256 amountOut)
-```
-
-### DeductFeesEventData
-
-```solidity
-struct DeductFeesEventData {
-  address token0;
-  address token1;
-  address token2;
-  uint256 amount0;
-  uint256 amount1;
-  uint256 amount2;
-  uint256 feeAmount0;
-  uint256 feeAmount1;
-  uint256 feeAmount2;
-  uint64 feeX64;
-  enum IKrystalVaultZapper.FeeType feeType;
-}
 ```
 
 ### VaultDeductFees
@@ -102,61 +163,12 @@ enum FeeType {
 }
 ```
 
-### DeductFeesParams
-
-```solidity
-struct DeductFeesParams {
-  uint256 amount0;
-  uint256 amount1;
-  uint256 amount2;
-  uint64 feeX64;
-  enum IKrystalVaultZapper.FeeType feeType;
-  address vaultFactory;
-  address vault;
-  address nfpm;
-  uint256 tokenId;
-  address userAddress;
-  address token0;
-  address token1;
-  address token2;
-}
-```
-
 ### Protocol
 
 ```solidity
 enum Protocol {
   UNI_V3,
   ALGEBRA_V1
-}
-```
-
-### SwapAndCreateVaultParams
-
-```solidity
-struct SwapAndCreateVaultParams {
-  enum IKrystalVaultZapper.Protocol protocol;
-  contract INonfungiblePositionManager nfpm;
-  contract IERC20 token0;
-  contract IERC20 token1;
-  uint24 fee;
-  int24 tickLower;
-  int24 tickUpper;
-  uint64 protocolFeeX64;
-  uint256 amount0;
-  uint256 amount1;
-  uint256 amount2;
-  address recipient;
-  uint256 deadline;
-  contract IERC20 swapSourceToken;
-  uint256 amountIn0;
-  uint256 amountOut0Min;
-  bytes swapData0;
-  uint256 amountIn1;
-  uint256 amountOut1Min;
-  bytes swapData1;
-  uint256 amountAddMin0;
-  uint256 amountAddMin1;
 }
 ```
 
