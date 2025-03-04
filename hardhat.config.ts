@@ -98,6 +98,7 @@ const config: HardhatUserConfig = {
     theme: "markdown",
     pages: "files",
     pageExtension: ".md",
+    exclude: ["contracts/interfaces/ICreateX.sol"],
   },
 };
 
