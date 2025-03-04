@@ -207,6 +207,23 @@ struct SwapAndDepositParams {
 ### swapAndDeposit
 
 ```solidity
-function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external payable
+function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external payable returns (uint256 shares)
+```
+
+### SwapOutParams
+
+```solidity
+struct SwapOutParams {
+  address token0;
+  address token1;
+  address targetToken;
+  bool unwrap;
+}
+```
+
+### withdrawAndSwap
+
+```solidity
+function withdrawAndSwap(contract IKrystalVault vault, uint256 shares, address to, uint256 amount0Min, uint256 amount1Min, bytes swapData) external
 ```
 

@@ -76,7 +76,7 @@ function _swapAndCreateVault(struct IKrystalVaultZapper.SwapAndCreateVaultParams
 ### swapAndDeposit
 
 ```solidity
-function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external payable
+function swapAndDeposit(struct IKrystalVaultZapper.SwapAndDepositParams params) external payable returns (uint256 shares)
 ```
 
 Does 1 or 2 swaps from swapSourceToken to token0 and token1 and adds as much as possible liquidity to an existing vault
@@ -90,7 +90,29 @@ Does 1 or 2 swaps from swapSourceToken to token0 and token1 and adds as much as 
 ### withdrawAndSwap
 
 ```solidity
-function withdrawAndSwap() external
+function withdrawAndSwap(contract IKrystalVault vault, uint256 shares, address to, uint256 amount0Min, uint256 amount1Min, bytes swapData) external
+```
+
+### SwapAndPrepareAmountsParams
+
+```solidity
+struct SwapAndPrepareAmountsParams {
+  contract IWETH9 weth;
+  contract IERC20 token0;
+  contract IERC20 token1;
+  uint256 amount0;
+  uint256 amount1;
+  uint256 amount2;
+  address recipient;
+  uint256 deadline;
+  contract IERC20 swapSourceToken;
+  uint256 amountIn0;
+  uint256 amountOut0Min;
+  bytes swapData0;
+  uint256 amountIn1;
+  uint256 amountOut1Min;
+  bytes swapData1;
+}
 ```
 
 ### exitAndSwap
@@ -102,7 +124,7 @@ function exitAndSwap() external
 ### _swapAndPrepareAmounts
 
 ```solidity
-function _swapAndPrepareAmounts(struct IKrystalVaultZapper.SwapAndCreateVaultParams params, bool unwrap) internal returns (uint256 total0, uint256 total1)
+function _swapAndPrepareAmounts(struct KrystalVaultZapper.SwapAndPrepareAmountsParams params, bool unwrap) internal returns (uint256 total0, uint256 total1)
 ```
 
 ### _swap
@@ -160,4 +182,26 @@ calculate fee
 | ---- | ---- | ----------- |
 | params | struct IKrystalVaultZapper.DeductFeesParams |  |
 | emitEvent | bool |  |
+
+### ReturnLeftoverTokensParams
+
+```solidity
+struct ReturnLeftoverTokensParams {
+  contract IWETH9 weth;
+  address to;
+  contract IERC20 token0;
+  contract IERC20 token1;
+  uint256 total0;
+  uint256 total1;
+  uint256 added0;
+  uint256 added1;
+  bool unwrap;
+}
+```
+
+### _returnLeftoverTokens
+
+```solidity
+function _returnLeftoverTokens(struct KrystalVaultZapper.ReturnLeftoverTokensParams params) internal
+```
 

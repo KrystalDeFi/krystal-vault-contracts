@@ -752,7 +752,13 @@
       }
     ],
     "name": "swapAndDeposit",
-    "outputs": [],
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "shares",
+        "type": "uint256"
+      }
+    ],
     "stateMutability": "payable",
     "type": "function"
   },
@@ -783,7 +789,38 @@
     "type": "function"
   },
   {
-    "inputs": [],
+    "inputs": [
+      {
+        "internalType": "contract IKrystalVault",
+        "name": "vault",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "shares",
+        "type": "uint256"
+      },
+      {
+        "internalType": "address",
+        "name": "to",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount0Min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount1Min",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "swapData",
+        "type": "bytes"
+      }
+    ],
     "name": "withdrawAndSwap",
     "outputs": [],
     "stateMutability": "nonpayable",

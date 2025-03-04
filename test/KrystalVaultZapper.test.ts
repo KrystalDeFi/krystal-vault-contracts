@@ -125,13 +125,17 @@ describe("KrystalVaultZapper", () => {
     {
       const pos = await vault.getBasePosition();
       console.log("pos", pos[1], pos[2]);
+      const shares = await vault.balanceOf(await alice.getAddress());
+      console.log("aliceShares", shares);
+      expect(pos[1]).to.be.equal("5105277619660049891");
+      expect(pos[2]).to.be.equal("329599260922291028");
+      expect(shares).to.be.equal("464750776779987875");
     }
     // rebalance to swap
     await vault.connect(alice).rebalance(-44800, -30600, 0, 0, 0, 0, 0);
     await vault.connect(alice).rebalance(-40800, -34600, 0, 0, 0, 0, 0);
 
     await vaultZapper.connect(alice).swapAndDeposit({
-      vault: vaultAddress,
       amount0: "0",
       amount1: "0",
       amount2: "1000000000000000000000",
@@ -148,11 +152,17 @@ describe("KrystalVaultZapper", () => {
       swapData0: swap100DaiToEthAndClankerData0,
       swapData1: swap100DaiToEthAndClankerData1,
       swapSourceToken: "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",
+      vault: vaultAddress,
     });
 
     {
       const pos = await vault.getBasePosition();
       console.log("pos", pos[1], pos[2]);
+      const shares = await vault.balanceOf(await alice.getAddress());
+      console.log("aliceShares", shares);
+      expect(pos[1]).to.be.equal("10189277394373537327");
+      expect(pos[2]).to.be.equal("657826086377663630");
+      expect(shares).to.be.equal("929945406242321330");
     }
   });
 });

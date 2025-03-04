@@ -110,7 +110,58 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
         feeType: FeeType.LIQUIDITY_FEE
       });
     }
-    vault = _swapAndCreateVault(_params, ownerFeeBasisPoint, vaultName, vaultSymbol, false);
+    // Implement zapIn logic
+    (uint256 total0, uint256 total1) = _swapAndPrepareAmounts(
+      SwapAndPrepareAmountsParams(
+        weth,
+        _params.token0,
+        _params.token1,
+        _params.amount0,
+        _params.amount1,
+        _params.amount2,
+        _params.recipient,
+        _params.deadline,
+        _params.swapSourceToken,
+        _params.amountIn0,
+        _params.amountOut0Min,
+        _params.swapData0,
+        _params.amountIn1,
+        _params.amountOut1Min,
+        _params.swapData1
+      ),
+      msg.value != 0
+    );
+
+    if (total0 != 0) {
+      _safeResetAndApprove(params.token0, address(vaultFactory), total0);
+    }
+    if (total1 != 0) {
+      _safeResetAndApprove(params.token1, address(vaultFactory), total1);
+    }
+
+    vault = vaultFactory.createVault(
+      IKrystalVaultFactory.CreateVaultParams({
+        owner: msg.sender,
+        nfpm: address(_params.nfpm),
+        mintParams: INonfungiblePositionManager.MintParams(
+          address(_params.token0),
+          address(_params.token1),
+          _params.fee,
+          _params.tickLower,
+          _params.tickUpper,
+          total0,
+          total1,
+          _params.amountAddMin0,
+          _params.amountAddMin1,
+          address(this), // is sent to real recipient aftwards
+          _params.deadline
+        ),
+        ownerFeeBasisPoint: ownerFeeBasisPoint,
+        name: vaultName,
+        symbol: vaultSymbol
+      })
+    );
+
     (, , , , uint256 currentTokenId, , , , ) = IKrystalVault(vault).state();
     emit VaultDeductFees(vault, address(params.nfpm), currentTokenId, params.recipient, eventData);
   }
@@ -122,37 +173,12 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
     string memory vaultSymbol,
     bool unwrap
   ) internal returns (address vault) {
-    // Implement zapIn logic
-    (uint256 total0, uint256 total1) = _swapAndPrepareAmounts(params, unwrap);
-
-    vault = vaultFactory.createVault(
-      IKrystalVaultFactory.CreateVaultParams({
-        owner: msg.sender,
-        nfpm: address(params.nfpm),
-        mintParams: INonfungiblePositionManager.MintParams(
-          address(params.token0),
-          address(params.token1),
-          params.fee,
-          params.tickLower,
-          params.tickUpper,
-          total0,
-          total1,
-          params.amountAddMin0,
-          params.amountAddMin1,
-          address(this), // is sent to real recipient aftwards
-          params.deadline
-        ),
-        ownerFeeBasisPoint: ownerFeeBasisPoint,
-        name: vaultName,
-        symbol: vaultSymbol
-      })
-    );
   }
 
   /// @notice Does 1 or 2 swaps from swapSourceToken to token0 and token1 and adds as much as possible liquidity to an existing vault
   /// @param params Swap and add to vault
   /// Send left-over to recipient
-  function swapAndDeposit(SwapAndDepositParams memory params) external payable {
+  function swapAndDeposit(SwapAndDepositParams memory params) external payable returns (uint256 shares) {
     (, INonfungiblePositionManager nfpm, IERC20 token0, IERC20 token1, uint256 currentTokenId, , , , ) = params
       .vault
       .state();
@@ -197,10 +223,69 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
         true
       );
     }
+
+    (uint256 total0, uint256 total1) = _swapAndPrepareAmounts(
+      SwapAndPrepareAmountsParams(
+        _getWeth9(address(nfpm), params.protocol),
+        token0,
+        token1,
+        params.amount0,
+        params.amount1,
+        params.amount2,
+        params.recipient,
+        params.deadline,
+        params.swapSourceToken,
+        params.amountIn0,
+        params.amountOut0Min,
+        params.swapData0,
+        params.amountIn1,
+        params.amountOut1Min,
+        params.swapData1
+      ),
+      msg.value != 0
+    );
+
+    if (total0 != 0) {
+      _safeResetAndApprove(token0, address(params.vault), total0);
+    }
+    if (total1 != 0) {
+      _safeResetAndApprove(token1, address(params.vault), total1);
+    }
+
+    shares = params.vault.deposit(total0, total1, params.amountAddMin0, params.amountAddMin1, msg.sender);
   }
 
-  function withdrawAndSwap() external {
+  function withdrawAndSwap(
+    IKrystalVault vault,
+    uint256 shares,
+    address to,
+    uint256 amount0Min,
+    uint256 amount1Min,
+    bytes calldata swapData
+  ) external {
     // Implement withdrawAndSwap logic
+    require(shares > 0, AmountError());
+    IERC20(address(vault)).transferFrom(msg.sender, address(this), shares);
+
+    (uint256 amount0, uint256 amount1) = vault.withdraw(shares, address(this), amount0Min, amount1Min);
+  }
+
+  struct SwapAndPrepareAmountsParams {
+    IWETH9 weth;
+    IERC20 token0;
+    IERC20 token1;
+    uint256 amount0;
+    uint256 amount1;
+    uint256 amount2;
+    address recipient;
+    uint256 deadline;
+    IERC20 swapSourceToken;
+    uint256 amountIn0;
+    uint256 amountOut0Min;
+    bytes swapData0;
+    uint256 amountIn1;
+    uint256 amountOut1Min;
+    bytes swapData1;
   }
 
   function exitAndSwap() external {
@@ -209,7 +294,7 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
 
   // swaps available tokens and prepares max amounts to be added to nfpm
   function _swapAndPrepareAmounts(
-    SwapAndCreateVaultParams memory params,
+    SwapAndPrepareAmountsParams memory params,
     bool unwrap
   ) internal returns (uint256 total0, uint256 total1) {
     if (params.swapSourceToken == params.token0) {
@@ -263,19 +348,12 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
       uint256 leftOver = params.amount2 - amountInDelta0 - amountInDelta1;
 
       if (leftOver != 0) {
-        IWETH9 weth = _getWeth9(address(params.nfpm), params.protocol);
-        _transferToken(weth, params.recipient, params.swapSourceToken, leftOver, unwrap);
+        // IWETH9 weth = _getWeth9(address(params.nfpm), params.protocol);
+        _transferToken(params.weth, params.recipient, params.swapSourceToken, leftOver, unwrap);
       }
     } else {
       total0 = params.amount0;
       total1 = params.amount1;
-    }
-
-    if (total0 != 0) {
-      _safeResetAndApprove(params.token0, address(vaultFactory), total0);
-    }
-    if (total1 != 0) {
-      _safeResetAndApprove(params.token1, address(vaultFactory), total1);
     }
   }
 
@@ -505,6 +583,31 @@ contract KrystalVaultZapper is AccessControl, IKrystalVaultZapper {
           params.feeType
         )
       );
+    }
+  }
+
+  struct ReturnLeftoverTokensParams {
+    IWETH9 weth;
+    address to;
+    IERC20 token0;
+    IERC20 token1;
+    uint256 total0;
+    uint256 total1;
+    uint256 added0;
+    uint256 added1;
+    bool unwrap;
+  }
+  // returns leftover token balances
+  function _returnLeftoverTokens(ReturnLeftoverTokensParams memory params) internal {
+    uint256 left0 = params.total0 - params.added0;
+    uint256 left1 = params.total1 - params.added1;
+
+    // return leftovers
+    if (left0 != 0) {
+      _transferToken(params.weth, params.to, params.token0, left0, params.unwrap);
+    }
+    if (left1 != 0) {
+      _transferToken(params.weth, params.to, params.token1, left1, params.unwrap);
     }
   }
 }

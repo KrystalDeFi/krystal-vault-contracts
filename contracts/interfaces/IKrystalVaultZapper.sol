@@ -146,5 +146,21 @@ interface IKrystalVaultZapper {
     uint64 protocolFeeX64;
   }
 
-  function swapAndDeposit(SwapAndDepositParams memory params) external payable;
+  function swapAndDeposit(SwapAndDepositParams memory params) external payable returns (uint256 shares);
+
+  struct SwapOutParams {
+    address token0;
+    address token1;
+    address targetToken;
+    bool unwrap;
+  }
+
+  function withdrawAndSwap(
+    IKrystalVault vault,
+    uint256 shares,
+    address to,
+    uint256 amount0Min,
+    uint256 amount1Min,
+    bytes calldata swapData
+  ) external;
 }
