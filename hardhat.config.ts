@@ -67,7 +67,7 @@ const config: HardhatUserConfig = {
       forking: {
         enabled: true,
         url: `https://base.llamarpc.com`,
-        blockNumber: 26313000,
+        blockNumber: 26969246,
       },
       accounts: {
         count: 10,

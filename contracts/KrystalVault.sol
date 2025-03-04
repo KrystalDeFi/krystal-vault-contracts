@@ -117,8 +117,6 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
     (uint160 sqrtPrice, , , , , , ) = state.pool.slot0();
     uint256 priceX96 = FullMath.mulDiv(sqrtPrice, sqrtPrice, FixedPoint96.Q96);
 
-    uint256 shares = amount1Desired + (FullMath.mulDiv(amount0Desired, priceX96, FixedPoint96.Q96));
-
     INonfungiblePositionManager.MintParams memory params = INonfungiblePositionManager.MintParams({
       token0: address(state.token0),
       token1: address(state.token1),
@@ -133,11 +131,20 @@ contract KrystalVault is AccessControlUpgradeable, ERC20PermitUpgradeable, Reent
       deadline: block.timestamp
     });
     (tokenId, liquidity, amount0, amount1) = _mintLiquidity(params);
+    uint256 shares = amount1 + (FullMath.mulDiv(amount0, priceX96, FixedPoint96.Q96));
 
     state.currentTickLower = tickLower;
     state.currentTickUpper = tickUpper;
 
     _mint(owner, shares);
+
+    // Return left over
+    if (amount0Desired > amount0) {
+      state.token0.safeTransfer(owner, amount0Desired - amount0);
+    }
+    if (amount1Desired > amount1) {
+      state.token1.safeTransfer(owner, amount1Desired - amount1);
+    }
 
     emit VaultDeposit(owner, shares, amount0, amount1);
   }
